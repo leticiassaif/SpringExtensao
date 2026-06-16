@@ -6,27 +6,29 @@ import lombok.Data;
 import java.util.List;
 
 @Entity
-@Data
 @Table(name = "discente")
 @PrimaryKeyJoinColumn(name = "id_usuario")
+@Data
 public class Discente extends Usuario {
     @Column(name = "matricula")
     private String matricula;
 
-    // ou Integer?
     @Column(name = "semestre_atual")
-    private int semestreAtual;
+    private Integer semestreAtual;
 
     @Column(name = "carga_horaria")
-    private int cargaHoraria;
+    private Float cargaHoraria;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_curso")
+    private Curso curso;
 
     @OneToMany(mappedBy = "discente")
     private List<Solicitacao> solicitacoes;
 
-    @ManyToMany(mappedBy = "")
+    @ManyToMany(mappedBy = "discentesGrupo")
     private List<Grupo> grupos;
 
-    @ManyToOne
-    @JoinColumn(name = "id_curso")
-    private Curso curso;
+    @ManyToMany(mappedBy = "discentesOp")
+    private List<Oportunidade> oportunidades;
 }

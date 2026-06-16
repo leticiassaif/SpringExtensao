@@ -1,10 +1,8 @@
 package br.ufma.springextensao.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
+import java.util.List;
 
 @Entity
 @Data
@@ -16,4 +14,7 @@ public class Docente extends Usuario {
 
     @Column(name = "departamento")
     private String departamento;
+
+    @ManyToMany(mappedBy = "coordenadores")
+    private List<Oportunidade> oportunidades;
 }

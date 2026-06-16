@@ -25,8 +25,9 @@ public class Usuario {
 
     private boolean ativo;
 
-//    @OneToMany(mappedBy = "usuario")
-//    private List<Papel> papel;
-
-    //TODO: add construtor
+    @ManyToMany
+    @JoinTable(name = "usuario_papel",
+                joinColumns = @JoinColumn(name = "id_usuario"),
+                inverseJoinColumns = @JoinColumn(name = "id_papel"))
+    List<Papel> cargos;
 }
