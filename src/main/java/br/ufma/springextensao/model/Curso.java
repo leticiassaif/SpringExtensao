@@ -3,6 +3,8 @@ package br.ufma.springextensao.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
 @Data
 @Table(name = "curso")
@@ -17,4 +19,7 @@ public class Curso {
 
     @Column(name = "codigo")
     private String codigo;
+
+    @OneToMany(mappedBy = "curso")
+    private List<Discente> discentes;
 }

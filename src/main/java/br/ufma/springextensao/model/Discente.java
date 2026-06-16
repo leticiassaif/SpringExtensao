@@ -20,10 +20,13 @@ public class Discente extends Usuario {
     @Column(name = "carga_horaria")
     private int cargaHoraria;
 
+    @OneToMany(mappedBy = "discente")
+    private List<Solicitacao> solicitacoes;
+
     @ManyToMany(mappedBy = "")
     private List<Grupo> grupos;
 
     @ManyToOne
-    @JoinColumn("id_curso")
+    @JoinColumn(name = "id_curso")
     private Curso curso;
 }
