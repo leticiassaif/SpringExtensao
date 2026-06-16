@@ -1,8 +1,9 @@
 package br.ufma.springextensao.service;
 
+import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.UsuarioRepo;
-import org.jvnet.hk2.annotations.Service;
+import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
@@ -21,5 +22,16 @@ public class UsuarioService {
             throw new IllegalArgumentException();
         }
         return usuarioRepo.findById(id).orElse(null);
+    }
+
+    /**
+     * Essa função olha se o usuario informado possui permissão
+     * @param usuario usuario que está sendo perguntado,
+     * @param papel o cargo procurado,
+     * @return true caso tenha e false caso não tenha
+     */
+
+    public static boolean hasPermissao(Usuario usuario, Papel papel) {
+        return usuario.getCargos().contains(papel);
     }
 }
