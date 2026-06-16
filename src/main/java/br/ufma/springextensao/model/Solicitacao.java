@@ -3,6 +3,8 @@ package br.ufma.springextensao.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @Table(name = "solicitacao")
@@ -12,17 +14,18 @@ public class Solicitacao {
     private Integer id;
 
     private String descricao;
+    private Integer cargaHorario;
 
-    private int cargaHorario;
+    @Column(name = "data_solicitacao")
+    private LocalDate dataSolicitacao;
 
-    // data inicio
-    // data fim
-
-    // status
+    @Column(name = "data_atual")
+    private LocalDate dataAtual;
 
     private String parecer;
+    // status -- decidir se vai usar enum mesmo
 
     @ManyToOne
-    @JoinColumn(name = "id_usuario") // discente?
-    private Discente discente;
+    @JoinColumn(name = "id_usuario")
+    private Discente discente; // nao seria usuario?
 }

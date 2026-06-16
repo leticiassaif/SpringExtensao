@@ -17,4 +17,7 @@ public class Docente extends Usuario {
 
     @ManyToMany(mappedBy = "coordenadores")
     private List<Oportunidade> oportunidades;
+
+    @ManyToMany(mappedBy = "docentes")
+    private List<Grupo> grupos;
 }

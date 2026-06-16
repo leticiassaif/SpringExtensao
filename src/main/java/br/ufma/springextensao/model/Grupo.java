@@ -2,6 +2,7 @@ package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.List;
 
 @Entity
 @Data
@@ -18,8 +19,24 @@ public class Grupo {
 
     @Column(name = "email")
     private String email;
-    // private docente responsavel + column
     // private discente solicitante
     private String justificativaNegacao;
-    // private Status status; + column
+    // status -- decidir se vai usar enum
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_curso")
+    private Curso curso;
+
+    // docente(s) responsável(eis)
+    @ManyToMany
+    @JoinTable(name = "grupo_docente",
+            joinColumns = @JoinColumn(name = "id_grupo"),
+            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
+    private List<Usuario> docentes;
+
+    @ManyToMany
+    @JoinTable(name = "grupo_discente",
+            joinColumns = @JoinColumn(name = "id_grupo"),
+            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
+    private List<Usuario> discentesGrupo;
 }
