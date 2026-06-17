@@ -4,8 +4,8 @@ import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Docente;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.UsuarioRepo;
-import org.jvnet.hk2.annotations.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class UsuarioService {
@@ -31,21 +31,18 @@ public class UsuarioService {
 
     public Usuario buscarPorEmail() {}
 
-    public Usuario buscarPorId() {}
-
-    // public static boolean podeGerenciarUsuario
-    // public void imprimirProgresso(Discente discente)
-
-    // EXEMPLO USADO POR GERALDO:
     /**
      * Essa função busca um usuário por id
-     * @param id chave do usuário única
-     * @return nulo se não existir, Usuário na base se existir
-     */
-    public Usuario obterUsuarioPorId(Integer id) {
+     * @param id o id do usuário que deseja achar
+     * @return o usuário buscado, nulo se não existir
+     **/
+    public Usuario buscarPorId(Integer id) {
         if (id == null) {
             throw new IllegalArgumentException();
         }
         return usuarioRepo.findById(id).orElse(null);
     }
+
+    // public static boolean podeGerenciarUsuario
+    // public void imprimirProgresso(Discente discente)
 }
