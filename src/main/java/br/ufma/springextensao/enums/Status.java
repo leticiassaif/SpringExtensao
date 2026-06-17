@@ -1,5 +1,8 @@
 package br.ufma.springextensao.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum Status {
     APROVADO("Aprovado"),
     PENDENTE("Pendente"),
@@ -11,9 +14,5 @@ public enum Status {
 
     Status (String descricao) {
         this.descricao = descricao;
-    }
-
-    public String getDescricao() {
-        return descricao;
     }
 }
