@@ -1,5 +1,7 @@
 package br.ufma.springextensao.service;
 
+import br.ufma.springextensao.model.Discente;
+import br.ufma.springextensao.model.Docente;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.UsuarioRepo;
 import org.jvnet.hk2.annotations.Service;
@@ -9,6 +11,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class UsuarioService {
     @Autowired
     UsuarioRepo usuarioRepo;
+
+    public Discente cadastrarDiscente() {}
+
+    public Docente cadastrarDocente() {}
+
+    /**
+     * Essa função promove um docente para um coordenador ou ...
+     * @param
+     * @return
+     **/
+    public void promoverDocente() {}
+
+    public void promoverDiscente() {}
+
+    public void desativar() {}
+
+    public void anonimizar() {}
+
+    public Usuario buscarPorEmail() {}
+
+    public Usuario buscarPorId() {}
+
+    // public static boolean podeGerenciarUsuario
+    // public void imprimirProgresso(Discente discente)
 
     // EXEMPLO USADO POR GERALDO:
     /**
