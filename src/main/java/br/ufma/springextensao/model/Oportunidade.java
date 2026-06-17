@@ -27,7 +27,7 @@ public class Oportunidade {
     @Column(name = "carga_horaria")
     private Integer cargaHoraria;
 
-//    @Column(name = "vagas") necessário?
+    // @Column(name = "vagas") necessário?
     private int vagas;
 
     @Column(name = "data_inicio")
