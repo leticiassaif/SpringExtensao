@@ -20,14 +20,13 @@ public class Curso {
     @Column(name = "codigo")
     private String codigo;
 
-    // ppc?
+    // ppc
     @Column(name="curriculo")
     private String curriculo;
 
     @OneToMany(mappedBy = "curso")
     private List<Discente> discentes;
 
-    // necessário?
     @OneToMany(mappedBy = "curso")
     private List<Grupo> grupos;
 

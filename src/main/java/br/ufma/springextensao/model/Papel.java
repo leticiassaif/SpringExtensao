@@ -13,6 +13,8 @@ public class Papel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_papel")
     private Integer id;
+
+    @Column(name = "papel")
     private String papel; // nome do papel
 
     @ManyToMany(mappedBy = "cargos")

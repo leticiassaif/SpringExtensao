@@ -2,9 +2,11 @@ package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "discente")
 @PrimaryKeyJoinColumn(name = "id_usuario")

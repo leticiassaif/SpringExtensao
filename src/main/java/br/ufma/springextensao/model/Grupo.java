@@ -1,5 +1,6 @@
 package br.ufma.springextensao.model;
 
+import br.ufma.springextensao.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
@@ -15,13 +16,20 @@ public class Grupo {
     @Column(name = "nome")
     private String nome;
 
+    @Column(name = "descricao") // *
     private String descricao;
 
     @Column(name = "email")
     private String email;
+
     // private discente solicitante
+
+    @Transient // *
     private String justificativaNegacao;
-    // status -- decidir se vai usar enum
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private Status status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_curso")

@@ -13,6 +13,8 @@ public class Tipo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_tipo")
     private Integer id;
+
+    @Column(name = "tipo")
     private String tipo; // nome do tipo
 
     @OneToMany(mappedBy = "tipo")

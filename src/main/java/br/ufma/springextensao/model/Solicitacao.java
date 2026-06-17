@@ -1,5 +1,6 @@
 package br.ufma.springextensao.model;
 
+import br.ufma.springextensao.enums.Status;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class Solicitacao {
     @Column(name = "descricao")
     private String descricao;
 
+    @Column(name = "carga_horaria")
     private Integer cargaHorario;
 
     @Column(name = "data_solicitacao")
@@ -30,8 +32,11 @@ public class Solicitacao {
     @Column(name = "data_atual")
     private LocalDate dataAtual;
 
+    @Column(name = "parecer")
     private String parecer;
-    // status -- decidir se vai usar enum mesmo
+
+    @Column(name = "status")
+    private Status status;
 
     @ManyToOne
     @JoinColumn(name = "id_usuario")

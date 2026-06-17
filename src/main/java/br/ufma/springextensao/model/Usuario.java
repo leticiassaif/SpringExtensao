@@ -13,17 +13,19 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
-    private Integer id;
+    protected Integer id;
 
     @Column(name = "nome")
-    private String nome;
+    protected String nome;
 
     @Column(name = "email")
-    private String email;
+    protected String email;
 
-    private String senha;
+    @Column(name = "senha")
+    protected String senha;
 
-    private boolean ativo;
+    @Column(name = "ativo")
+    protected boolean ativo;
 
     @ManyToMany
     @JoinTable(name = "usuario_papel",
