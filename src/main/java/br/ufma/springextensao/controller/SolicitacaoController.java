@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/solicitacao")
@@ -27,18 +28,20 @@ public class SolicitacaoController {
         return solicitacaoService.submeter(solicitacao);
     }
 
-    // tirar duvida
-    @PostMapping
-    public ResponseEntity<Solicitacao> submeter(@RequestBody SolicitacaoDTO dto) {
-        Solicitacao solicitacao;
-        Discente discente = (Discente) usuarioService.buscarPorId(dto.getIdDiscente());
-        solicitacao = Solicitacao.builder().
-                descricao(dto.getDescricao()).
-                dataSolicitacao(LocalDate.parse(dto.getDataSolicitacao())).
-                discente(discente).
-                build();
-        try {
-            Solicitacao salvo = solicitacaoService.submeter();
-        } catch () {}
+    @GetMapping("/{id}")
+    public Solicitacao buscarPorId(@PathVariable Integer id) {
+        return solicitacaoService.buscarPorId(id);
     }
+
+    @GetMapping("/discente/{id}")
+    public List<Solicitacao> listarPorDiscente(@PathVariable Integer id) {
+        return solicitacaoService.listarPorDiscente(id);
+    }
+
+    @GetMapping("/pendentes")
+    public List<Solicitacao> listarPendentes() {
+        return solicitacaoService.listarPendentes();
+    }
+
+    // fazer de aprovar, indeferir e reenviar
 }

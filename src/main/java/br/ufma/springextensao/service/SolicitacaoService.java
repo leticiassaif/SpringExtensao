@@ -1,12 +1,16 @@
 package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.controller.dtos.SolicitacaoDTO;
+import br.ufma.springextensao.enums.Status;
 import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Solicitacao;
 import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.SolicitacaoRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class SolicitacaoService {
@@ -24,11 +28,17 @@ public class SolicitacaoService {
     public Solicitacao submeter(SolicitacaoDTO solicitacao) {
         Solicitacao solicitacaoNovo;
         Discente discente = (Discente) usuarioService.buscarPorId(solicitacao.getIdDiscente());
+
+        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDescricao() == null || discente == null) {
+            throw new IllegalArgumentException();
+        }
+
         solicitacaoNovo = Solicitacao.builder().
                 descricao(solicitacao.getDescricao()).
                 discente(discente).
-                // data da solicitação?
+                dataSolicitacao(LocalDate.parse(solicitacao.getDataSolicitacao())).
                 build();
+
         return solicitacaoRepo.save(solicitacaoNovo);
     }
 
@@ -57,5 +67,17 @@ public class SolicitacaoService {
         return solicitacaoRepo.findById(id).orElse(null);
     }
 
-    // fazer no repo métodos para achar por status da solicitação (listar pendentes)
+    public List<Solicitacao> listarPorDiscente(Integer id) {
+        Discente discente = (Discente) usuarioService.buscarPorId(id);
+
+        if (discente == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return solicitacaoRepo.findByDiscente(discente);
+    }
+
+    public List<Solicitacao> listarPendentes() {
+        return solicitacaoRepo.findByStatus(Status.PENDENTE);
+    }
 }
