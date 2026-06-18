@@ -52,14 +52,29 @@ public class SolicitacaoService {
         return false;
     }
 
+    /**
+     * Essa função
+     * @param
+     * @return
+     **/
     public boolean indeferir() {
         return false;
     }
 
+    /**
+     * Essa função
+     * @param
+     * @return
+     **/
     public boolean reenviar() {
         return false;
     }
 
+    /**
+     * Essa função busca uma solicitação por seu id
+     * @param id id da solicitação desejada
+     * @return nulo se não for achada, a solicitação desejada
+     **/
     public Solicitacao buscarPorId(Integer id) {
         if (id == null) {
             throw new IllegalArgumentException();
@@ -67,6 +82,11 @@ public class SolicitacaoService {
         return solicitacaoRepo.findById(id).orElse(null);
     }
 
+    /**
+     * Essa função lista as solicitações feitas por um discente específico
+     * @param id id do discente procurado
+     * @return solicitações feitas pelo discente
+     **/
     public List<Solicitacao> listarPorDiscente(Integer id) {
         Discente discente = (Discente) usuarioService.buscarPorId(id);
 
@@ -77,6 +97,10 @@ public class SolicitacaoService {
         return solicitacaoRepo.findByDiscente(discente);
     }
 
+    /**
+     * Essa função lista as solicitações com status de pendentes
+     * @return lista com as solicitações pendentes
+     **/
     public List<Solicitacao> listarPendentes() {
         return solicitacaoRepo.findByStatus(Status.PENDENTE);
     }
