@@ -8,5 +8,5 @@ import lombok.EqualsAndHashCode;
 public class DiscenteDTO extends UsuarioDTO {
     String matricula;
     Integer cargaHoraria;
-    String idCurso;
+    Integer idCurso;
 }
