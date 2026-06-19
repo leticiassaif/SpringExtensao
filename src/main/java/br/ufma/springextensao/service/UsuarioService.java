@@ -143,8 +143,8 @@ public class UsuarioService {
     // public void imprimirProgresso(Discente discente)
 
     public static boolean hasPermissao(Usuario usuario, Papel papel) {
-        if (usuario == null || papel == null) {
-            throw new IllegalArgumentException("Campo(s) inválido(s).");
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário inválido.");
         }
         return usuario.getCargos().contains(papel);
     }
