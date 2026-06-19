@@ -9,6 +9,8 @@ import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import static br.ufma.springextensao.util.Validacao.isEmailValido;
+
 @Service
 public class UsuarioService {
     @Autowired
@@ -45,10 +47,12 @@ public class UsuarioService {
 
     /**
      * Essa função cadastra um novo docente
+     * @param solicitante quem chamou a função
      * @param docente objeto para transferir informação
      * @return Docente persistido no banco
      **/
-    public Docente cadastrarDocente(DocenteDTO docente) {
+    public Docente cadastrarDocente(Usuario solicitante, DocenteDTO docente) {
+        // fazer has permissao
         Docente docenteNovo = Docente.builder().
                 nome(docente.getNome()).
                 email(docente.getEmail()).
@@ -68,13 +72,61 @@ public class UsuarioService {
      **/
     public void promoverDocente() {}
 
+    /**
+     * Essa função promove um discente para discente diretor
+     * @param
+     * @return
+     **/
     public void promoverDiscente() {}
 
-    public void desativar() {}
+    /**
+     * Essa função desativa a conta de um usuário
+     * @param solicitante quem chamou a função
+     * @param id id do usuário
+     **/
+    public void desativar(Usuario solicitante, Integer id) {
+        // fazer has permissao
 
-    public void anonimizar() {}
+        Usuario usuario = buscarPorId(id);
 
-    public Usuario buscarPorEmail() {}
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe");
+        }
+
+        usuario.setAtivo(false);
+
+        // checar se conta é discente ou docente!
+    }
+
+    /**
+     * Essa função anonimiza a conta de um usuário
+     * @param solicitante quem chamou a função
+     * @param id id do usuário
+     **/
+    public void anonimizar(Usuario solicitante, Integer id) {
+        // fazer has permissao
+
+        Usuario usuario = buscarPorId(id);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe");
+        }
+
+        usuario.setAtivo(false);
+        usuario.setNome("Usuário Anonimizado");
+        usuario.setEmail("anonimo_" + usuario.getId() + "@sistema.local");
+        usuario.setSenha("");
+        usuario.getCargos().clear();
+
+        // checar se conta é discente ou docente!
+    }
+
+    public Usuario buscarPorEmail(String email) {
+        if (!isEmailValido(email)) {
+            throw new IllegalArgumentException("Email inválido.");
+        }
+        return usuarioRepo.findByEmail(email);
+    }
 
     /**
      * Essa função busca um usuário por id
@@ -88,7 +140,6 @@ public class UsuarioService {
         return usuarioRepo.findById(id).orElse(null);
     }
 
-    // public static boolean podeGerenciarUsuario
     // public void imprimirProgresso(Discente discente)
 
     public static boolean hasPermissao(Usuario usuario, Papel papel) {
