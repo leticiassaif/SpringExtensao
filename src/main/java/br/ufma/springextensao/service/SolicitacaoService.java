@@ -64,7 +64,7 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Campo(s) inválido(s)");
         }
 
-        if (!hasPermissao(solicitante, admin) || !hasPermissao(solicitante, coordenador)) {
+        if (!hasPermissao(solicitante, admin) && !hasPermissao(solicitante, coordenador)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
