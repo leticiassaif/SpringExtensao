@@ -114,7 +114,7 @@ public class SolicitacaoService {
 
     /**
      * Essa função reenvia uma solicitação anteriormente indeferida
-     * @param
+     * @param id id da solicitação que deseja reenviar
      **/
     public void reenviar(Integer id) {
         if (id == null) {
