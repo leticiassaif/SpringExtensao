@@ -6,4 +6,5 @@ import lombok.Data;
 public class UsuarioDTO {
     String nome;
     String email;
+    String senha; // nulo em response
 }
