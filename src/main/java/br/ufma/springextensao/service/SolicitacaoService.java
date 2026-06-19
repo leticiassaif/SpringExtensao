@@ -54,7 +54,7 @@ public class SolicitacaoService {
     /**
      * Essa função aprova uma solicitação
      * @param solicitante quem chamou a função
-     * @param id id da solicitação que se deseja aprovar // mandar a própria solicitação
+     * @param id id da solicitação que se deseja aprovar
      **/
     public void aprovar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findById();
@@ -85,21 +85,55 @@ public class SolicitacaoService {
     }
 
     /**
-     * Essa função
-     * @param
-     * @return
+     * Essa função indefere uma solicitação
+     * @param solicitante quem chamou a função
+     * @param id id da solicitação que se deseja indeferir
+     * @param parecer ...
      **/
-    public boolean indeferir() {
-        return false;
+    public void indeferir(Usuario solicitante, Integer id, String parecer) {
+        if (solicitante == null || id == null || parecer == null) {
+            throw new IllegalArgumentException("Campo(s) inválido(s)");
+        }
+
+        // fazer has permissão!
+
+        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+
+        if (solicitacao == null) {
+            throw new IllegalArgumentException("Solicitação não existe.");
+        }
+
+        if (solicitacao.getStatus() != Status.PENDENTE) {
+            throw new IllegalStateException("Solicitação não está pendente");
+        }
+
+        solicitacao.setStatus(Status.INDEFERIDO);
+        solicitacao.setParecer(parecer);
+        // verificar como seria o período de 5 dias
     }
 
     /**
-     * Essa função
+     * Essa função reenvia uma solicitação anteriormente indeferida
      * @param
-     * @return
      **/
-    public boolean reenviar() {
-        return false;
+    public void reenviar(Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Campo inválido");
+        }
+
+        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+
+        if (solicitacao == null) {
+            throw new IllegalArgumentException("Solicitação não existe.");
+        }
+
+        if (solicitacao.getStatus() != Status.INDEFERIDO) {
+            throw new IllegalStateException("Solicitação não foi indeferida.");
+        }
+
+        solicitacao.setStatus(Status.PENDENTE);
+        //solicitacao.setParecer(null);
+        // verificar como seria o período de 10 dias
     }
 
     /**
