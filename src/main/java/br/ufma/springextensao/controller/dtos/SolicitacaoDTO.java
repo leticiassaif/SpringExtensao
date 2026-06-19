@@ -9,6 +9,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class SolicitacaoDTO {
     String descricao;
+    Integer cargaHoraria;
     String dataSolicitacao;
     Integer idDiscente;
 }
