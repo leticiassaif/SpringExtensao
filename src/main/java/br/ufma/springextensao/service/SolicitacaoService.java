@@ -59,19 +59,17 @@ public class SolicitacaoService {
         Papel admin = papelRepo.findById();
         Papel coordenador = papelRepo.findById();
 
-        if (id == null) {
-            throw new IllegalArgumentException("ID inválido.");
-        }
-
         if (!hasPermissao(solicitante, admin) && !hasPermissao(solicitante, coordenador)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
-        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+        Solicitacao solicitacao = buscarPorId(id);
 
         if (solicitacao == null) {
             throw new IllegalArgumentException("Solicitação não existe.");
-        } else if (solicitacao.getStatus() != Status.PENDENTE) {
+        }
+
+        if (solicitacao.getStatus() != Status.PENDENTE) {
             throw new IllegalStateException("Solicitação não está pendente");
         }
 
@@ -90,13 +88,13 @@ public class SolicitacaoService {
      * @param parecer ...
      **/
     public void indeferir(Usuario solicitante, Integer id, String parecer) {
-        if (solicitante == null || id == null || parecer == null) {
-            throw new IllegalArgumentException("Campo(s) inválido(s)");
+        if (parecer == null) {
+            throw new IllegalArgumentException("Parecer inválido.");
         }
 
         // fazer has permissão!
 
-        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+        Solicitacao solicitacao = buscarPorId(id);
 
         if (solicitacao == null) {
             throw new IllegalArgumentException("Solicitação não existe.");
@@ -116,11 +114,7 @@ public class SolicitacaoService {
      * @param id id da solicitação que deseja reenviar
      **/
     public void reenviar(Integer id) {
-        if (id == null) {
-            throw new IllegalArgumentException("ID inválido.");
-        }
-
-        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+        Solicitacao solicitacao = buscarPorId(id);
 
         if (solicitacao == null) {
             throw new IllegalArgumentException("Solicitação não existe.");
