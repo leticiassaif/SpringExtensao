@@ -1,7 +1,11 @@
 package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
@@ -9,6 +13,7 @@ import java.util.List;
 @Data
 @Table(name = "usuario")
 @Inheritance(strategy = InheritanceType.JOINED)
+@SuperBuilder
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,4 +37,8 @@ public class Usuario {
                 joinColumns = @JoinColumn(name = "id_usuario"),
                 inverseJoinColumns = @JoinColumn(name = "id_papel"))
     List<Papel> cargos;
+
+    public Usuario() {
+
+    }
 }

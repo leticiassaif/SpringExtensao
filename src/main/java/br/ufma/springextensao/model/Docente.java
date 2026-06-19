@@ -1,16 +1,18 @@
 package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
 @Data
+@Entity
+@SuperBuilder
 @Table(name = "docente")
+@Inheritance // add strategy dps
 @PrimaryKeyJoinColumn(name = "id_usuario")
+@EqualsAndHashCode(callSuper = true)
 public class Docente extends Usuario {
     @Column(name = "siape")
     private String siape;
@@ -23,4 +25,8 @@ public class Docente extends Usuario {
 
     @ManyToMany(mappedBy = "docentes")
     private List<Grupo> grupos;
+
+    public Docente() {
+        super();
+    }
 }

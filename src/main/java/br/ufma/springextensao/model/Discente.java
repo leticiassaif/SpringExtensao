@@ -1,16 +1,18 @@
 package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(name = "discente")
-@PrimaryKeyJoinColumn(name = "id_usuario")
 @Data
+@Entity
+@SuperBuilder
+@Table(name = "discente")
+@Inheritance // add strategy dps
+@PrimaryKeyJoinColumn(name = "id_usuario")
+@EqualsAndHashCode(callSuper = true)
 public class Discente extends Usuario {
     @Column(name = "matricula")
     private String matricula;
@@ -19,7 +21,7 @@ public class Discente extends Usuario {
     private Integer semestreAtual;
 
     @Column(name = "carga_horaria")
-    private Float cargaHoraria;
+    private Integer cargaHoraria;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_curso")
@@ -33,4 +35,9 @@ public class Discente extends Usuario {
 
     @ManyToMany(mappedBy = "discentesOp")
     private List<Oportunidade> oportunidades;
+
+
+    public Discente() {
+        super();
+    }
 }
