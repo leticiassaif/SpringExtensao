@@ -3,8 +3,10 @@ package br.ufma.springextensao.service;
 import br.ufma.springextensao.controller.dtos.SolicitacaoDTO;
 import br.ufma.springextensao.enums.Status;
 import br.ufma.springextensao.model.Discente;
+import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Solicitacao;
-import br.ufma.springextensao.repository.CursoRepo;
+import br.ufma.springextensao.model.Usuario;
+import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.SolicitacaoRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,10 +14,15 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
+
 @Service
 public class SolicitacaoService {
     @Autowired
     SolicitacaoRepo solicitacaoRepo;
+
+    @Autowired
+    PapelRepo papelRepo;
 
     @Autowired
     UsuarioService usuarioService;
@@ -29,13 +36,15 @@ public class SolicitacaoService {
         Solicitacao solicitacaoNovo;
         Discente discente = (Discente) usuarioService.buscarPorId(solicitacao.getIdDiscente());
 
-        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDescricao() == null || discente == null) {
+        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDescricao() == null
+                || solicitacao.getCargaHoraria() == null || discente == null) {
             throw new IllegalArgumentException();
         }
 
         solicitacaoNovo = Solicitacao.builder().
                 descricao(solicitacao.getDescricao()).
                 discente(discente).
+                cargaHorario(solicitacao.getCargaHoraria()).
                 dataSolicitacao(LocalDate.parse(solicitacao.getDataSolicitacao())).
                 build();
 
@@ -44,12 +53,35 @@ public class SolicitacaoService {
 
     /**
      * Essa função aprova uma solicitação
-     * @param
-     * @return true se foi criada com sucesso, falso caso contrário
+     * @param solicitante quem chamou a função
+     * @param id id da solicitação que se deseja aprovar // mandar a própria solicitação
      **/
-    public boolean aprovar() {
-        // checagem de permissão
-        return false;
+    public void aprovar(Usuario solicitante, Integer id) {
+        Papel admin = papelRepo.findById();
+        Papel coordenador = papelRepo.findById();
+
+        if (solicitante == null || id == null) {
+            throw new IllegalArgumentException("Campo(s) inválido(s)");
+        }
+
+        if (!hasPermissao(solicitante, admin) || !hasPermissao(solicitante, coordenador)) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
+
+        Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
+
+        if (solicitacao == null) {
+            throw new IllegalArgumentException("Solicitação não existe.");
+        } else if (solicitacao.getStatus() != Status.PENDENTE) {
+            throw new IllegalStateException("Solicitação não está pendente");
+        }
+
+        solicitacao.setStatus(Status.APROVADO);
+        solicitacao.setDataAtual(LocalDate.now());
+        Discente discente = solicitacao.getDiscente();
+        discente.setCargaHoraria(discente.getCargaHoraria() + solicitacao.getCargaHorario());
+
+        solicitacaoRepo.save(solicitacao);
     }
 
     /**
