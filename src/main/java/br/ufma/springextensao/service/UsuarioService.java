@@ -1,9 +1,10 @@
 package br.ufma.springextensao.service;
 
-import br.ufma.springextensao.model.Discente;
-import br.ufma.springextensao.model.Docente;
-import br.ufma.springextensao.model.Papel;
-import br.ufma.springextensao.model.Usuario;
+import br.ufma.springextensao.controller.dtos.DiscenteDTO;
+import br.ufma.springextensao.controller.dtos.DocenteDTO;
+import br.ufma.springextensao.controller.dtos.UsuarioDTO;
+import br.ufma.springextensao.model.*;
+import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,9 +14,52 @@ public class UsuarioService {
     @Autowired
     UsuarioRepo usuarioRepo;
 
-    public Discente cadastrarDiscente() {}
+    @Autowired
+    CursoRepo cursoRepo;
 
-    public Docente cadastrarDocente() {}
+    /**
+     * Essa função cadastra um novo discente
+     * @param discente objeto para transferir informação
+     * @return Discente persistido no banco
+     **/
+    public Discente cadastrarDiscente(DiscenteDTO discente) {
+        Discente discenteNovo;
+        Curso curso = cursoRepo.findById(discente.getIdCurso()).orElse(null);
+
+        if (curso == null) {
+            throw new IllegalArgumentException("Curso com esse ID não existe.");
+        }
+
+        discenteNovo = Discente.builder().
+                nome(discente.getNome()).
+                email(discente.getEmail()).
+                senha(discente.getSenha()).
+                ativo(true).
+                matricula(discente.getMatricula()).
+                cargaHoraria(discente.getCargaHoraria()).
+                curso(curso).
+                build();
+
+        return usuarioRepo.save(discenteNovo);
+    }
+
+    /**
+     * Essa função cadastra um novo docente
+     * @param docente objeto para transferir informação
+     * @return Docente persistido no banco
+     **/
+    public Docente cadastrarDocente(DocenteDTO docente) {
+        Docente docenteNovo = Docente.builder().
+                nome(docente.getNome()).
+                email(docente.getEmail()).
+                senha(docente.getSenha()).
+                ativo(true).
+                siape(docente.getSiape()).
+                departamento(docente.getDepartamento()).
+                build();
+
+        return usuarioRepo.save(docenteNovo);
+    }
 
     /**
      * Essa função promove um docente para um coordenador ou ...
