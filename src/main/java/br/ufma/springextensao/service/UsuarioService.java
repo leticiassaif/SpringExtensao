@@ -2,6 +2,7 @@ package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Docente;
+import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +39,20 @@ public class UsuarioService {
      **/
     public Usuario buscarPorId(Integer id) {
         if (id == null) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("ID inválido.");
         }
         return usuarioRepo.findById(id).orElse(null);
     }
 
     // public static boolean podeGerenciarUsuario
     // public void imprimirProgresso(Discente discente)
+
+    public static boolean hasPermissao(Usuario usuario, Papel papel) {
+        for (Papel p : usuario.getCargos()) {
+            if (p == papel) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
