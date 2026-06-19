@@ -36,9 +36,8 @@ public class SolicitacaoService {
         Solicitacao solicitacaoNovo;
         Discente discente = (Discente) usuarioService.buscarPorId(solicitacao.getIdDiscente());
 
-        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDescricao() == null
-                || solicitacao.getCargaHoraria() == null || discente == null) {
-            throw new IllegalArgumentException();
+        if (discente == null) {
+            throw new IllegalArgumentException("Discente não existe");
         }
 
         solicitacaoNovo = Solicitacao.builder().
@@ -60,8 +59,8 @@ public class SolicitacaoService {
         Papel admin = papelRepo.findById();
         Papel coordenador = papelRepo.findById();
 
-        if (solicitante == null || id == null) {
-            throw new IllegalArgumentException("Campo(s) inválido(s)");
+        if (id == null) {
+            throw new IllegalArgumentException("ID inválido.");
         }
 
         if (!hasPermissao(solicitante, admin) && !hasPermissao(solicitante, coordenador)) {
@@ -118,7 +117,7 @@ public class SolicitacaoService {
      **/
     public void reenviar(Integer id) {
         if (id == null) {
-            throw new IllegalArgumentException("Campo inválido");
+            throw new IllegalArgumentException("ID inválido.");
         }
 
         Solicitacao solicitacao = solicitacaoRepo.findById(id).orElse(null);
@@ -143,7 +142,7 @@ public class SolicitacaoService {
      **/
     public Solicitacao buscarPorId(Integer id) {
         if (id == null) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("ID inválido.");
         }
         return solicitacaoRepo.findById(id).orElse(null);
     }
@@ -157,7 +156,7 @@ public class SolicitacaoService {
         Discente discente = (Discente) usuarioService.buscarPorId(id);
 
         if (discente == null) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Discente não existe.");
         }
 
         return solicitacaoRepo.findByDiscente(discente);
