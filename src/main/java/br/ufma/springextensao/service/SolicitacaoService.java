@@ -22,10 +22,10 @@ public class SolicitacaoService {
     SolicitacaoRepo solicitacaoRepo;
 
     @Autowired
-    PapelRepo papelRepo;
+    UsuarioService usuarioService;
 
     @Autowired
-    UsuarioService usuarioService;
+    PapelRepo papelRepo;
 
     /**
      * Essa função cria uma nova solicitação
@@ -56,8 +56,8 @@ public class SolicitacaoService {
      * @param id id da solicitação que se deseja aprovar
      **/
     public void aprovar(Usuario solicitante, Integer id) {
-        Papel admin = papelRepo.findById();
-        Papel coordenador = papelRepo.findById();
+        Papel admin = papelRepo.findByNome("ADMIN");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
         if (!hasPermissao(solicitante, admin) && !hasPermissao(solicitante, coordenador)) {
             throw new SecurityException("Usuário não possui permissão.");
