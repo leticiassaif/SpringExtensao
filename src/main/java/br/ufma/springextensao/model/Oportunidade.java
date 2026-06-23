@@ -1,6 +1,9 @@
 package br.ufma.springextensao.model;
 
+import br.ufma.springextensao.enums.Status;
+import br.ufma.springextensao.enums.StatusOp;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,8 +13,8 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "oportunidade")
-// @Builder
-// construtor
+@Builder
+@AllArgsConstructor
 public class Oportunidade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +39,8 @@ public class Oportunidade {
     @Column(name = "data_fim")
     private LocalDate dataFim;
 
-    // status -- decidir se vai usar enum mesmo
+    @Column(name = "status")
+    private Enum <StatusOp> status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_curso")
@@ -59,4 +63,8 @@ public class Oportunidade {
                 joinColumns = @JoinColumn(name = "id_oportunidade"),
                 inverseJoinColumns = @JoinColumn(name = "id_usuario"))
     private List<Usuario> coodernadores;
+
+    public Oportunidade() {
+
+    }
 }

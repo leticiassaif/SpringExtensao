@@ -1,5 +1,7 @@
 package br.ufma.springextensao.service;
 
+import br.ufma.springextensao.controller.dtos.OportunidadeDTO;
+import br.ufma.springextensao.enums.StatusOp;
 import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.OportunidadeRepo;
@@ -19,46 +21,52 @@ public class OportunidadeService {
     public Oportunidade buscarOportunidadePorId(Integer id) {
         if (id == null)
             throw new IllegalArgumentException("ID é obrigatório.");
-        return oportunidadeRepo.findById(id).orElse(null);
+        return oportunidadeRepo.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException("Oportunidade não encontrada!"));
     }
 
     /**
     Essa função cria uma Oportunidade
-    @param titulo nome da oportunidade
-     @param descricao o que é a oportunidade
-     @param cargaHoraria quantas horas a oportunidade oferece
-     @param vagas quantas vagas a oportunidade oferece
-     @param inicio data de inicio da oportunidade
-     @param fim data de inicio da oportunidade
-    @return oportunidade salvada no repo
+    @return oportunidade salva no repo
      */
-    public Oportunidade criaOportunidade(String titulo, String descricao, Integer cargaHoraria, int vagas, LocalDate inicio, LocalDate fim) {
-        if (titulo == null || titulo.isBlank()){
+
+    public Oportunidade criaOportunidade(OportunidadeDTO oportunidade) {
+        if (oportunidade.getTitulo() == null || oportunidade.getTitulo().isBlank()){
             throw new IllegalArgumentException("Título é obrigatório.");
         }
-        if (descricao == null || descricao.isBlank()) {
+        if (oportunidade.getDescricao() == null || oportunidade.getDescricao().isBlank()) {
             throw new IllegalArgumentException("Descrição é obrigatória.");
         }
-        if (cargaHoraria <= 0) {
+        if (oportunidade.getCargaHoraria() <= 0) {
             throw new IllegalArgumentException("Carga horária deve ser positiva.");
         }
-        if (inicio == null || fim == null || fim.isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Datas inválidas.");
+
+        LocalDate inicio = oportunidade.getDataInicio();
+        LocalDate fim = oportunidade.getDataFim();
+
+        if (inicio == null || fim == null) {
+            throw new IllegalArgumentException("Datas de início e fim são obrigatórias.");
+        }
+        if (fim.isBefore(inicio)) {
+            throw new IllegalArgumentException("Data de fim não pode ser antes do início.");
+        }
+        if (inicio.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Data de início não pode ser no passado.");
         }
 
         // Usar a função para hasPermissao
 
-        Oportunidade oportunidade = Oportunidade.builder()
-                .titulo(titulo)
-                .descricao(descricao)
-                .cargaHoraria(cargaHoraria)
-                .vagas(vagas)
+        Oportunidade nova = Oportunidade.builder()
+                .titulo(oportunidade.getTitulo())
+                .descricao(oportunidade.getDescricao())
+                .cargaHoraria(oportunidade.getCargaHoraria())
+                .vagas(oportunidade.getVagas())
                 .dataInicio(inicio)
-                .dataFim(fim)
-//              .status(StatusOportunidade.RASCUNHO) esperando para ver se vai ser enum ou n
+                .dataFim(oportunidade.getDataFim())
+                .status(StatusOp.RASCUNHO)
                 .build();
 
-        return oportunidadeRepo.save(oportunidade);
+        return oportunidadeRepo.save(nova);
     }
 
     /**
