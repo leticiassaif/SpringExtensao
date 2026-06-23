@@ -5,7 +5,9 @@ import br.ufma.springextensao.controller.dtos.DocenteDTO;
 import br.ufma.springextensao.controller.dtos.UsuarioDTO;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.CursoRepo;
+import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,9 @@ public class UsuarioService {
 
     @Autowired
     CursoRepo cursoRepo;
+
+    @Autowired
+    PapelRepo papelRepo;
 
     /**
      * Essa função cadastra um novo discente
@@ -52,7 +57,12 @@ public class UsuarioService {
      * @return Docente persistido no banco
      **/
     public Docente cadastrarDocente(Usuario solicitante, DocenteDTO docente) {
-        // fazer has permissao
+        Papel admin = papelRepo.findByNome("ADMIN");
+
+        if (!hasPermissao(solicitante, admin)) {
+            throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
+        }
+
         Docente docenteNovo = Docente.builder().
                 nome(docente.getNome()).
                 email(docente.getEmail()).
@@ -67,25 +77,69 @@ public class UsuarioService {
 
     /**
      * Essa função promove um docente para um coordenador ou ...
-     * @param
-     * @return
+     * @param id id do docente que deseja promover
+     * @return docente persistido no banco
      **/
-    public void promoverDocente() {}
+    @Transactional
+    public Docente promoverDocente(String cargo, Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID inválido.");
+        }
+
+        if (cargo == null) {
+            throw new IllegalArgumentException("Cargo inválido.");
+        }
+
+        cargo = cargo.toUpperCase();
+        Papel papel = papelRepo.findByNome(cargo);
+
+        if (papel == null) {
+            throw new IllegalArgumentException("Cargo não existe.");
+        }
+
+        Docente docente = (Docente) buscarPorId(id);
+
+        if (docente == null) {
+            throw new IllegalArgumentException("Docente não existe.");
+        }
+
+        docente.getCargos().add(papel);
+
+        return usuarioRepo.save(docente);
+    }
 
     /**
      * Essa função promove um discente para discente diretor
-     * @param
-     * @return
+     * @param id id do discente que deseja promover
+     * @return discente persistido no banco
      **/
-    public void promoverDiscente() {}
+    @Transactional
+    public Discente promoverDiscente(Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID inválido.");
+        }
+
+        Discente discente = (Discente) buscarPorId(id);
+
+        if (discente == null) {
+            throw new IllegalArgumentException("Discente não existe.");
+        }
+
+        Papel diretor = papelRepo.findByNome("DISCENTE DIRETOR");
+        discente.getCargos().add(diretor);
+
+        return usuarioRepo.save(discente);
+    }
 
     /**
      * Essa função desativa a conta de um usuário
      * @param solicitante quem chamou a função
      * @param id id do usuário
      **/
+    @Transactional
     public void desativar(Usuario solicitante, Integer id) {
-        // fazer has permissao
+        Papel admin = papelRepo.findByNome("ADMIN");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
         Usuario usuario = buscarPorId(id);
 
@@ -93,9 +147,18 @@ public class UsuarioService {
             throw new IllegalArgumentException("Usuário não existe");
         }
 
+        if (!(hasPermissao(solicitante, coordenador) && usuario instanceof Discente)
+                && !hasPermissao(solicitante, admin)) {
+            throw new SecurityException("O solicitante não possui permissão para desativar o usuário");
+        }
+
         usuario.setAtivo(false);
 
-        // checar se conta é discente ou docente!
+        if (usuario instanceof Discente) {
+            // remover de grupos
+        }
+
+        usuarioRepo.save(usuario);
     }
 
     /**
@@ -103,8 +166,13 @@ public class UsuarioService {
      * @param solicitante quem chamou a função
      * @param id id do usuário
      **/
+    @Transactional
     public void anonimizar(Usuario solicitante, Integer id) {
-        // fazer has permissao
+        Papel admin = papelRepo.findByNome("ADMIN");
+
+        if (!hasPermissao(solicitante, admin)) {
+            throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
+        }
 
         Usuario usuario = buscarPorId(id);
 
@@ -118,7 +186,11 @@ public class UsuarioService {
         usuario.setSenha("");
         usuario.getCargos().clear();
 
-        // checar se conta é discente ou docente!
+        if (usuario instanceof Discente) {
+            // remover de grupos
+        }
+
+        usuarioRepo.save(usuario);
     }
 
     public Usuario buscarPorEmail(String email) {
@@ -142,6 +214,12 @@ public class UsuarioService {
 
     // public void imprimirProgresso(Discente discente)
 
+    /**
+     * Essa função retorna se um usuário possui um certo cargo
+     * @param usuario usuário em questão
+     * @param papel papel procurado
+     * @return true se o usuário possuir, false caso contrário
+     **/
     public static boolean hasPermissao(Usuario usuario, Papel papel) {
         if (usuario == null) {
             throw new IllegalArgumentException("Usuário inválido.");

@@ -8,6 +8,7 @@ import br.ufma.springextensao.model.Solicitacao;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.SolicitacaoRepo;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,7 @@ public class SolicitacaoService {
      * @param solicitacao objeto para transferir informação
      * @return Solicitação persistida no banco
      **/
+    @Transactional
     public Solicitacao submeter(SolicitacaoDTO solicitacao) {
         Solicitacao solicitacaoNovo;
         Discente discente = (Discente) usuarioService.buscarPorId(solicitacao.getIdDiscente());
@@ -55,6 +57,7 @@ public class SolicitacaoService {
      * @param solicitante quem chamou a função
      * @param id id da solicitação que se deseja aprovar
      **/
+    @Transactional
     public void aprovar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
@@ -85,14 +88,19 @@ public class SolicitacaoService {
      * Essa função indefere uma solicitação
      * @param solicitante quem chamou a função
      * @param id id da solicitação que se deseja indeferir
-     * @param parecer ...
+     * @param parecer parecer da solicitação indeferida
      **/
     public void indeferir(Usuario solicitante, Integer id, String parecer) {
         if (parecer == null) {
             throw new IllegalArgumentException("Parecer inválido.");
         }
 
-        // fazer has permissão!
+        Papel admin = papelRepo.findByNome("ADMIN");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
+
+        if (!hasPermissao(solicitante, admin) && !hasPermissao(solicitante, coordenador)) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
 
         Solicitacao solicitacao = buscarPorId(id);
 
@@ -125,7 +133,7 @@ public class SolicitacaoService {
         }
 
         solicitacao.setStatus(Status.PENDENTE);
-        //solicitacao.setParecer(null);
+        solicitacao.setParecer(null);
         // verificar como seria o período de 10 dias
     }
 
