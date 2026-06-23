@@ -89,8 +89,10 @@ public class SolicitacaoService {
      * @param solicitante quem chamou a função
      * @param id id da solicitação que se deseja indeferir
      * @param parecer parecer da solicitação indeferida
+     * @return solicitação persistida no banco
      **/
-    public void indeferir(Usuario solicitante, Integer id, String parecer) {
+    @Transactional
+    public Solicitacao indeferir(Usuario solicitante, Integer id, String parecer) {
         if (parecer == null) {
             throw new IllegalArgumentException("Parecer inválido.");
         }
@@ -115,13 +117,17 @@ public class SolicitacaoService {
         solicitacao.setStatus(Status.INDEFERIDO);
         solicitacao.setParecer(parecer);
         // verificar como seria o período de 5 dias
+
+        return solicitacaoRepo.save(solicitacao);
     }
 
     /**
      * Essa função reenvia uma solicitação anteriormente indeferida
      * @param id id da solicitação que deseja reenviar
+     * @return solicitação persistida no banco
      **/
-    public void reenviar(Integer id) {
+    @Transactional
+    public Solicitacao reenviar(Integer id) {
         Solicitacao solicitacao = buscarPorId(id);
 
         if (solicitacao == null) {
@@ -135,6 +141,8 @@ public class SolicitacaoService {
         solicitacao.setStatus(Status.PENDENTE);
         solicitacao.setParecer(null);
         // verificar como seria o período de 10 dias
+
+        return solicitacaoRepo.save(solicitacao);
     }
 
     /**
