@@ -81,7 +81,13 @@ public class UsuarioService {
      * @return docente persistido no banco
      **/
     @Transactional
-    public Docente promoverDocente(String cargo, Integer id) {
+    public Docente promoverDocente(Usuario solicitante, String cargo, Integer id) {
+        Papel admin = papelRepo.findByNome("ADMIN");
+
+        if (!hasPermissao(solicitante, admin)) {
+            throw new SecurityException("O usuário não possui permissão para promover um docente.");
+        }
+
         if (id == null) {
             throw new IllegalArgumentException("ID inválido.");
         }
