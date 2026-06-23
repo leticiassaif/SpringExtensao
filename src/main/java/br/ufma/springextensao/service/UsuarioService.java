@@ -193,6 +193,33 @@ public class UsuarioService {
         usuarioRepo.save(usuario);
     }
 
+    /**
+     * Essa função autentica um usuário no login
+     * @param email o email do usuário que se deseja achar
+     * @param senha a senha do usuário hasheada
+     * @return o usuário buscado, nulo se não existir
+     **/
+    public Usuario autenticar(String email, String senha) {
+        if (email == null || senha == null) {
+            throw new IllegalArgumentException("Campo(s) obrigatório(s) inválido(s).");
+        }
+
+        Usuario usuario = buscarPorEmail(email);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Nenhum usuário possui esse email.")
+        }
+
+        // fazer checagem de senha com hash
+
+        return usuario;
+    }
+
+    /**
+     * Essa função busca um usuário por email
+     * @param email o email do usuário que deseja achar
+     * @return o usuário buscado, nulo se não existir
+     **/
     public Usuario buscarPorEmail(String email) {
         if (!isEmailValido(email)) {
             throw new IllegalArgumentException("Email inválido.");
