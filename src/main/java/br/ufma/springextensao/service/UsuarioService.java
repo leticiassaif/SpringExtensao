@@ -121,6 +121,7 @@ public class UsuarioService {
      **/
     @Transactional
     public Discente promoverDiscente(Integer id) {
+        // verificar se precisa de hasPermissao
         if (id == null) {
             throw new IllegalArgumentException("ID inválido.");
         }
