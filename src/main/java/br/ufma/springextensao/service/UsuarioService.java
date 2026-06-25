@@ -214,7 +214,7 @@ public class UsuarioService {
         Usuario usuario = buscarPorEmail(email);
 
         if (usuario == null) {
-            throw new IllegalArgumentException("Nenhum usuário possui esse email.")
+            throw new IllegalArgumentException("Nenhum usuário possui esse email.");
         }
 
         // fazer checagem de senha com hash
