@@ -172,7 +172,7 @@ public class UsuarioService {
         usuario.setAtivo(false);
 
         if (usuario instanceof Discente) {
-            grupoService.removerDiscenteTodosGrupos(usuario.getId());
+            grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
         usuarioRepo.save(usuario);
@@ -204,7 +204,7 @@ public class UsuarioService {
         usuario.getCargos().clear();
 
         if (usuario instanceof Discente) {
-            grupoService.removerDiscenteTodosGrupos(usuario.getId());
+            grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
         usuarioRepo.save(usuario);

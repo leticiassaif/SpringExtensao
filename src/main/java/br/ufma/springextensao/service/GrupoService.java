@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.print.Doc;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
@@ -40,16 +41,20 @@ public class GrupoService {
     @Transactional
     public Grupo criar(GrupoDTO grupo) {
         Grupo grupoNovo;
-        Docente docente = (Docente) usuarioService.buscarPorId(grupo.getIdResponsavel());
-        Discente diretor = (Discente) usuarioService.buscarPorId(grupo.getIdDiretor());
+        Usuario usuarioDoc = usuarioService.buscarPorId(grupo.getIdResponsavel());
+        Usuario usuarioDir = usuarioService.buscarPorId(grupo.getIdDiretor());
         //Curso curso = cursoService.buscaPorId(grupo.getIdCurso());
 
-        if (docente == null) {
-            throw new IllegalArgumentException("Docente não existe.");
+        if (usuarioDoc == null || usuarioDir == null) {
+            throw new IllegalArgumentException("Usuário(s) não existe.");
         }
 
-        if (diretor == null) {
-            throw new IllegalArgumentException("Discente não existe.");
+        if (!(usuarioDoc instanceof Docente docente)) {
+            throw new IllegalArgumentException("Usuário não é docente.");
+        }
+
+        if (!(usuarioDir instanceof Discente diretor)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
         }
 
 //        if (curso == null) {
@@ -151,18 +156,30 @@ public class GrupoService {
     @Transactional
     public Discente adicionarMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
         Grupo grupo = buscaPorId(idGrupo);
-        Discente discente = (Discente) usuarioService.buscarPorId(idDiscente);
+        Usuario usuario = usuarioService.buscarPorId(idDiscente);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
 
         if (!permissaoGrupo(grupo, solicitante)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
-        if (membroPertenceGrupo(grupo, discente)) {
-            throw new IllegalArgumentException("O discente já faz parte do grupo.");
-        }
-
         if (grupo.getStatus() != Status.APROVADO) {
             throw new IllegalArgumentException("Grupo precisa estar ativo/aprovado.");
+        }
+
+        if (membroPertenceGrupo(grupo, discente)) {
+            throw new IllegalArgumentException("O discente já faz parte do grupo.");
         }
 
         if (!discente.isAtivo()) {
@@ -175,11 +192,81 @@ public class GrupoService {
         return usuarioRepo.save(discente);
     }
 
-    public Discente removerMembro() {}
+    /**
+     * Essa função remove um discente de um grupo
+     * @param solicitante quem chamou a função
+     * @param idGrupo id do grupo
+     * @param idDiscente id do discente que se deseja remover
+     * @return discente persistido no banco
+     **/
+    @Transactional
+    public Discente removerMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
+        Grupo grupo = buscaPorId(idGrupo);
+        Usuario usuario = usuarioService.buscarPorId(idDiscente);
+
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
+
+        if (!permissaoGrupo(grupo, solicitante)) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
+
+        if (grupo.getStatus() != Status.APROVADO) {
+            throw new IllegalArgumentException("Grupo precisa estar ativo/aprovado.");
+        }
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+
+        if (!membroPertenceGrupo(grupo, discente)) {
+            throw new IllegalArgumentException("O discente não faz parte do grupo.");
+        }
+
+        grupo.getDiscentesGrupo().remove(discente);
+        discente.getGrupos().remove(grupo);
+
+        grupoRepo.save(grupo);
+        return usuarioRepo.save(discente);
+    }
 
     public Discente atribuirCargo() {}
 
-    public Discente removerDiscenteTodosGrupos() {}
+    /**
+     * Essa função remove um discente de um grupo
+     * @param solicitante quem chamou a função
+     * @param id id do discente
+     * @return discente persistido no banco
+     **/
+    @Transactional
+    public Discente removerDiscenteTodosGrupos(Usuario solicitante, Integer id) {
+//        Papel admin = papelRepo.findByNome("ADMIN");
+//
+//        if (!hasPermissao(solicitante, admin)) {
+//            throw new SecurityException("Usuário não possui permissão.");
+//        }
+
+        Usuario usuario = usuarioService.buscarPorId(id);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+
+        discente.getGrupos().forEach(grupo -> grupo.getDiscentesGrupo().remove(discente));
+        grupoRepo.saveAll(discente.getGrupos());
+
+        discente.getGrupos().clear();
+        return usuarioRepo.save(discente);
+    }
 
     /**
      * Essa função busca um grupo por seu id
@@ -193,7 +280,7 @@ public class GrupoService {
         return grupoRepo.findById(id).orElse(null);
     }
 
-    // ou deixa public e retorna o discente??
+    // ou deixa public e retorna o discente?? se nao, tirar checagem?
     /**
      * Essa função checa se um discente faz parte de um grupo
      * @param grupo grupo que se deseja checar
