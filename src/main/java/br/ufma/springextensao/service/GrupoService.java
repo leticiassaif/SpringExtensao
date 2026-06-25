@@ -1,10 +1,11 @@
 package br.ufma.springextensao.service;
 
-import br.ufma.springextensao.model.Discente;
-import br.ufma.springextensao.model.Grupo;
+import br.ufma.springextensao.controller.dtos.GrupoDTO;
+import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.GrupoRepo;
-import org.jvnet.hk2.annotations.Service;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -13,7 +14,36 @@ public class GrupoService {
     @Autowired
     GrupoRepo grupoRepo;
 
-    public Grupo criar() {}
+    @Autowired
+    CursoService cursoService;
+
+    @Autowired
+    UsuarioService usuarioService;
+
+    @Transactional
+    public Grupo criar(GrupoDTO grupo) {
+        Grupo grupoNovo;
+        Docente docente = (Docente) usuarioService.buscarPorId(grupo.getIdResponsavel());
+        //Curso curso = cursoService.buscaPorId(grupo.getIdCurso());
+
+        if (docente == null) {
+            throw new IllegalArgumentException("Docente não existe.");
+        }
+
+//        if (curso == null) {
+//            throw new IllegalArgumentException("Curso não existe.");
+//        }
+
+        grupoNovo = Grupo.builder().
+                nome(grupo.getNome()).
+                descricao(grupo.getDescricao()).
+                email(grupo.getEmail()).
+                //curso(curso).
+                responsavel(docente).
+                build();
+
+        return grupoRepo.save(grupoNovo);
+    }
 
     public Grupo aprovar() {}
 
@@ -39,6 +69,7 @@ public class GrupoService {
         return grupoRepo.findById(id).orElse(null);
     }
 
+    // precisa?
     public Discente buscarMembroPorGrupo() {}
 
     public Discente buscarMembroPorCargo() {}
@@ -51,12 +82,40 @@ public class GrupoService {
         return grupoRepo.findAll();
     }
 
-    // lista mebros
+    /**
+     * Essa função lista todos os discentes de um grupo
+     * @param id id do grupo desejado
+     * @return lista com todos os discentes do grupo
+     **/
+    public List<Usuario> listaGrupoMembros(Integer id) {
+        Grupo grupo = buscaPorId(id);
 
-    // listar membros atviso de um grupo
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
 
-    // listar membros nao atviso de um grupo
+        return grupo.getDiscentesGrupo();
+    }
 
+    /**
+     * Essa função lista todos os discentes ativos de um grupo
+     * @param id id do grupo desejado
+     * @return lista com todos os discentes ativos do grupo
+     **/
+    public List<Usuario> listaGrupoMembrosAtivos(Integer id) {
+        return listaGrupoMembros(id).stream().filter(Usuario::isAtivo).toList();
+    }
+
+    /**
+     * Essa função lista todos os discentes não ativos de um grupo
+     * @param id id do grupo desejado
+     * @return lista com todos os discentes não ativos do grupo
+     **/
+    public List<Usuario> listaGrupoMembrosNaoAtivos(Integer id) {
+        return listaGrupoMembros(id).stream().filter(u -> !u.isAtivo()).toList();
+    }
+
+    // INCOMPLETA
     private static boolean permissaoGrupo(Grupo grupo, Discente discente) {
         return true;
     }
