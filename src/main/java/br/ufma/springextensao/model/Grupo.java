@@ -45,9 +45,9 @@ public class Grupo {
     @JoinColumn(name = "id_usuario")
     private Docente responsavel;
 
-//    @ManyToOne
-//    @JoinColumn(name = "id_usuario")
-//    private Discente diretor;
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Discente diretor;
 
     @ManyToMany
     @JoinTable(name = "grupo_discente",
