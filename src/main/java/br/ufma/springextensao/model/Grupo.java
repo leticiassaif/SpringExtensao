@@ -35,12 +35,10 @@ public class Grupo {
     @JoinColumn(name = "id_curso")
     private Curso curso;
 
-    // docente(s) responsável(eis)
-    @ManyToMany
-    @JoinTable(name = "grupo_docente",
-            joinColumns = @JoinColumn(name = "id_grupo"),
-            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Usuario> docentes;
+    // docente responsável
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Docente responsavel;
 
     @ManyToMany
     @JoinTable(name = "grupo_discente",
