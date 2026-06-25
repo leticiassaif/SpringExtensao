@@ -5,6 +5,7 @@ import br.ufma.springextensao.enums.Status;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.GrupoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
+import br.ufma.springextensao.repository.UsuarioRepo;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,9 @@ public class GrupoService {
 
     @Autowired
     PapelRepo papelRepo;
+
+    @Autowired
+    UsuarioRepo usuarioRepo;
 
     @Autowired
     CursoService cursoService;
@@ -137,7 +141,39 @@ public class GrupoService {
         return grupoRepo.save(grupo);
     }
 
-    public Discente adicionarMembro() {}
+    /**
+     * Essa função adiciona um discente ao grupo
+     * @param solicitante quem chamou a função
+     * @param idGrupo id do grupo
+     * @param idDiscente id do discente que se deseja adicionar
+     * @return discente persistido no banco
+     **/
+    @Transactional
+    public Discente adicionarMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
+        Grupo grupo = buscaPorId(idGrupo);
+        Discente discente = (Discente) usuarioService.buscarPorId(idDiscente);
+
+        if (!permissaoGrupo(grupo, solicitante)) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
+
+        if (membroPertenceGrupo(grupo, discente)) {
+            throw new IllegalArgumentException("O discente já faz parte do grupo.");
+        }
+
+        if (grupo.getStatus() != Status.APROVADO) {
+            throw new IllegalArgumentException("Grupo precisa estar ativo/aprovado.");
+        }
+
+        if (!discente.isAtivo()) {
+            throw new IllegalArgumentException("O novo membro precisa ser um usuário ativo.");
+        }
+
+        grupo.getDiscentesGrupo().add(discente);
+        discente.getGrupos().add(grupo);
+        grupoRepo.save(grupo);
+        return usuarioRepo.save(discente);
+    }
 
     public Discente removerMembro() {}
 
@@ -157,8 +193,24 @@ public class GrupoService {
         return grupoRepo.findById(id).orElse(null);
     }
 
-    // precisa?
-    public Discente buscarMembroPorGrupo() {}
+    // ou deixa public e retorna o discente??
+    /**
+     * Essa função checa se um discente faz parte de um grupo
+     * @param grupo grupo que se deseja checar
+     * @param discente discente em questão
+     * @return true se pertence, falso caso contrário
+     **/
+    private boolean membroPertenceGrupo(Grupo grupo, Discente discente) {
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
+
+        if (discente == null) {
+            throw new IllegalArgumentException("Discente não existe.");
+        }
+
+        return discente.getGrupos().contains(grupo);
+    }
 
     public Discente buscarMembroPorCargo() {}
 
@@ -203,8 +255,19 @@ public class GrupoService {
         return listaGrupoMembros(id).stream().filter(u -> !u.isAtivo()).toList();
     }
 
-    // INCOMPLETA
-    private static boolean permissaoGrupo(Grupo grupo, Discente discente) {
-        return true;
+    /**
+     * Essa função checa se o solicitante tem permissão para manipular os membros do grupo
+     * @param grupo grupo que se deseja manipular
+     * @param solicitante quem chamou a função
+     * @return true se possui permissão, falso caso contrário
+     **/
+    private boolean permissaoGrupo(Grupo grupo, Usuario solicitante) {
+        Papel admin = papelRepo.findByNome("ADMIN");
+
+        boolean isSolicitanteAdmin = hasPermissao(solicitante, admin);
+        boolean isSolicitanteDiretor = grupo.getDiretor().equals(solicitante);
+        boolean isSolicitanteResponsavel = grupo.getResponsavel().equals(solicitante);
+
+        return isSolicitanteDiretor && isSolicitanteResponsavel && isSolicitanteAdmin;
     }
 }
