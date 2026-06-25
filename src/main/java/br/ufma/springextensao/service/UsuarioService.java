@@ -23,6 +23,8 @@ public class UsuarioService {
 
     @Autowired
     PapelRepo papelRepo;
+    @Autowired
+    private GrupoService grupoService;
 
     /**
      * Essa função cadastra um novo discente
@@ -103,10 +105,14 @@ public class UsuarioService {
             throw new IllegalArgumentException("Cargo não existe.");
         }
 
-        Docente docente = (Docente) buscarPorId(id);
+        Usuario usuario = buscarPorId(id);
 
-        if (docente == null) {
-            throw new IllegalArgumentException("Docente não existe.");
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Docente docente)) {
+            throw new IllegalArgumentException("Usuário não é docente.");
         }
 
         docente.getCargos().add(papel);
@@ -126,10 +132,14 @@ public class UsuarioService {
             throw new IllegalArgumentException("ID inválido.");
         }
 
-        Discente discente = (Discente) buscarPorId(id);
+        Usuario usuario = buscarPorId(id);
 
-        if (discente == null) {
-            throw new IllegalArgumentException("Discente não existe.");
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
         }
 
         Papel diretor = papelRepo.findByNome("DISCENTE DIRETOR");
@@ -162,7 +172,7 @@ public class UsuarioService {
         usuario.setAtivo(false);
 
         if (usuario instanceof Discente) {
-            // remover de grupos
+            grupoService.removerDiscenteTodosGrupos(usuario.getId());
         }
 
         usuarioRepo.save(usuario);
@@ -194,7 +204,7 @@ public class UsuarioService {
         usuario.getCargos().clear();
 
         if (usuario instanceof Discente) {
-            // remover de grupos
+            grupoService.removerDiscenteTodosGrupos(usuario.getId());
         }
 
         usuarioRepo.save(usuario);

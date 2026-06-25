@@ -36,10 +36,14 @@ public class SolicitacaoService {
     @Transactional
     public Solicitacao submeter(SolicitacaoDTO solicitacao) {
         Solicitacao solicitacaoNovo;
-        Discente discente = (Discente) usuarioService.buscarPorId(solicitacao.getIdDiscente());
+        Usuario usuario = usuarioService.buscarPorId(solicitacao.getIdDiscente());
 
-        if (discente == null) {
-            throw new IllegalArgumentException("Discente não existe");
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
         }
 
         solicitacaoNovo = Solicitacao.builder().
@@ -163,10 +167,14 @@ public class SolicitacaoService {
      * @return solicitações feitas pelo discente
      **/
     public List<Solicitacao> listarPorDiscente(Integer id) {
-        Discente discente = (Discente) usuarioService.buscarPorId(id);
+        Usuario usuario = usuarioService.buscarPorId(id);
 
-        if (discente == null) {
-            throw new IllegalArgumentException("Discente não existe.");
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
         }
 
         return solicitacaoRepo.findByDiscente(discente);
