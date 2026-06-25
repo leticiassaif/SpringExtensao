@@ -29,8 +29,6 @@ public class Grupo {
     @Column(name = "email")
     private String email;
 
-    // private discente solicitante
-
     @Transient // *
     private String justificativaNegacao;
 
@@ -46,6 +44,10 @@ public class Grupo {
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Docente responsavel;
+
+//    @ManyToOne
+//    @JoinColumn(name = "id_usuario")
+//    private Discente diretor;
 
     @ManyToMany
     @JoinTable(name = "grupo_discente",

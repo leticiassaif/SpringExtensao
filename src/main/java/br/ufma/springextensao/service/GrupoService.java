@@ -24,11 +24,16 @@ public class GrupoService {
     public Grupo criar(GrupoDTO grupo) {
         Grupo grupoNovo;
         Docente docente = (Docente) usuarioService.buscarPorId(grupo.getIdResponsavel());
+        //Discente diretor = (Discente) usuarioService.buscarPorId(grupo.getIdDiretor());
         //Curso curso = cursoService.buscaPorId(grupo.getIdCurso());
 
         if (docente == null) {
             throw new IllegalArgumentException("Docente não existe.");
         }
+
+//        if (diretor == null) {
+//            throw new IllegalArgumentException("Discente não existe.");
+//        }
 
 //        if (curso == null) {
 //            throw new IllegalArgumentException("Curso não existe.");
@@ -38,6 +43,7 @@ public class GrupoService {
                 nome(grupo.getNome()).
                 descricao(grupo.getDescricao()).
                 email(grupo.getEmail()).
+                //diretor(diretor).
                 //curso(curso).
                 responsavel(docente).
                 build();

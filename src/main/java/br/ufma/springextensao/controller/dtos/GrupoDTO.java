@@ -8,6 +8,6 @@ public class GrupoDTO {
     String descricao;
     String email;
     Integer idCurso;
-    // id do discente solicitante
+    //Integer idDiretor;
     Integer idResponsavel;
 }
