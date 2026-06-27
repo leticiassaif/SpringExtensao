@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
@@ -64,11 +65,15 @@ public class GrupoService {
                 nome(grupo.getNome()).
                 descricao(grupo.getDescricao()).
                 email(grupo.getEmail()).
-                diretor(diretor).
                 //curso(curso).
                 responsavel(docente).
+                diretores(new ArrayList<>()).
+                discentesGrupo(new ArrayList<>()).
                 status(Status.PENDENTE).
                 build();
+
+        // adiciona o diretor do grupo sem promover ainda - só para o grupo não ser aprovado sem um diretor
+        grupoNovo.getDiretores().add(diretor);
 
         return grupoRepo.save(grupoNovo);
     }
@@ -101,12 +106,13 @@ public class GrupoService {
         }
 
         grupo.setStatus(Status.APROVADO);
+        Discente disDiretor = grupo.getDiretores().get(0);
 
-        if (grupo.getDiretor().getCargos().contains(diretor)) {
-            usuarioService.promoverDiscente(grupo.getDiretor().getId());
+        if (!disDiretor.getCargos().contains(diretor)) {
+            usuarioService.promoverDiscente(disDiretor.getId());
         }
 
-        grupo.getDiscentesGrupo().add(grupo.getDiretor());
+        grupo.getDiscentesGrupo().add(disDiretor);
 
         return grupoRepo.save(grupo);
     }
@@ -153,7 +159,7 @@ public class GrupoService {
      * @return discente persistido no banco
      **/
     @Transactional
-    public Discente adicionarMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
+    public Grupo adicionarMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
         Grupo grupo = buscaPorId(idGrupo);
         Usuario usuario = usuarioService.buscarPorId(idDiscente);
 
@@ -187,8 +193,9 @@ public class GrupoService {
 
         grupo.getDiscentesGrupo().add(discente);
         discente.getGrupos().add(grupo);
-        grupoRepo.save(grupo);
-        return usuarioRepo.save(discente);
+
+        usuarioRepo.save(discente);
+        return grupoRepo.save(grupo);
     }
 
     /**
@@ -199,7 +206,7 @@ public class GrupoService {
      * @return discente persistido no banco
      **/
     @Transactional
-    public Discente removerMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
+    public Grupo removerMembro(Usuario solicitante, Integer idGrupo, Integer idDiscente) {
         Grupo grupo = buscaPorId(idGrupo);
         Usuario usuario = usuarioService.buscarPorId(idDiscente);
 
@@ -230,11 +237,128 @@ public class GrupoService {
         grupo.getDiscentesGrupo().remove(discente);
         discente.getGrupos().remove(grupo);
 
-        grupoRepo.save(grupo);
-        return usuarioRepo.save(discente);
+        usuarioRepo.save(discente);
+        return grupoRepo.save(grupo);
     }
 
-    //public Discente atribuirCargo() {}
+    /**
+     * Essa função atribui um cargo ao discente em um grupo
+     * @param solicitante quem chamou a função
+     * @param idGrupo id do grupo
+     * @param idDiscente id do discente que se deseja remover
+     * @param cargo cargo que se deseja atribuir
+     * @return grupo persistido no banco
+     **/
+    @Transactional
+    public Grupo atribuirCargo(Usuario solicitante, Integer idDiscente, Integer idGrupo, String cargo) {
+        if (cargo == null || cargo.isBlank()) {
+            throw new IllegalArgumentException("Cargo inválido.");
+        }
+
+        Papel papel = papelRepo.findByNome(cargo.toUpperCase());
+
+        if (papel == null) {
+            throw new IllegalArgumentException("Papel não existe.");
+        }
+
+        Grupo grupo = buscaPorId(idGrupo);
+
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
+
+        if (!solicitante.equals(grupo.getResponsavel())) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
+
+        if (grupo.getStatus() != Status.APROVADO) {
+            throw new IllegalArgumentException("Grupo precisa estar ativo/aprovado.");
+        }
+
+        Usuario usuario = usuarioService.buscarPorId(idDiscente);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+
+        if (!membroPertenceGrupo(grupo, discente)) {
+            throw new IllegalArgumentException("Discente não faz parte do grupo.");
+        }
+
+        if (!discente.getCargos().contains(papel)) {
+            discente.getCargos().add(papel);
+            usuarioRepo.save(discente);
+        }
+
+        grupo.getDiretores().add(discente);
+        return grupoRepo.save(grupo);
+    }
+
+    /**
+     * Essa função remove um cargo de um discente
+     * @param solicitante quem chamou a função
+     * @param idGrupo id do grupo
+     * @param idDiscente id do discente que se deseja remover
+     * @param cargo cargo que se deseja atribuir
+     * @return grupo persistido no banco
+     **/
+    @Transactional
+    public Grupo removerCargo(Usuario solicitante, Integer idDiscente, Integer idGrupo, String cargo) {
+        if (cargo == null || cargo.isBlank()) {
+            throw new IllegalArgumentException("Cargo inválido.");
+        }
+
+        Papel papel = papelRepo.findByNome(cargo.toUpperCase());
+
+        if (papel == null) {
+            throw new IllegalArgumentException("Papel não existe.");
+        }
+
+        Grupo grupo = buscaPorId(idGrupo);
+
+        if (grupo == null) {
+            throw new IllegalArgumentException("Grupo não existe.");
+        }
+
+        if (!solicitante.equals(grupo.getResponsavel())) {
+            throw new SecurityException("Usuário não possui permissão.");
+        }
+
+        if (grupo.getStatus() != Status.APROVADO) {
+            throw new IllegalArgumentException("Grupo precisa estar ativo/aprovado.");
+        }
+
+        Usuario usuario = usuarioService.buscarPorId(idDiscente);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+
+        if (!grupo.getDiretores().contains(discente)) {
+            throw new IllegalArgumentException("Discente não faz parte da diretoria.");
+        }
+
+        grupo.getDiretores().remove(discente);
+
+        boolean isDiscenteDiretorOutroGrupo = discente.getGruposDiretores().stream().
+                anyMatch(g -> !g.equals(grupo));
+
+        if (!isDiscenteDiretorOutroGrupo) {
+            discente.getCargos().remove(papel);
+            usuarioRepo.save(discente);
+        }
+
+        discente.getGruposDiretores().remove(grupo);
+        return grupoRepo.save(grupo);
+    }
 
     /**
      * Essa função remove um discente de um grupo
@@ -351,7 +475,8 @@ public class GrupoService {
         Papel admin = papelRepo.findByNome("ADMIN");
 
         boolean isSolicitanteAdmin = hasPermissao(solicitante, admin);
-        boolean isSolicitanteDiretor = grupo.getDiretor().equals(solicitante);
+        // verificar
+        boolean isSolicitanteDiretor = grupo.getDiretores().contains(solicitante);
         boolean isSolicitanteResponsavel = grupo.getResponsavel().equals(solicitante);
 
         return isSolicitanteDiretor && isSolicitanteResponsavel && isSolicitanteAdmin;

@@ -45,16 +45,16 @@ public class Grupo {
     @JoinColumn(name = "id_usuario")
     private Docente responsavel;
 
-    @ManyToOne
-    @JoinColumn(name = "id_usuario")
-    private Discente diretor;
+//    @ManyToOne
+//    @JoinColumn(name = "id_usuario")
+//    private Discente diretor;
 
     // discentes que possuem cargos (diretor, vice-diretor, tesoureiro)
-//    @ManyToMany
-//    @JoinTable(name = "grupo_diretores",
-//            joinColumns = @JoinColumn(name = "id_grupo"),
-//            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-//    private List<Discente> diretores;
+    @ManyToMany
+    @JoinTable(name = "grupo_diretores",
+            joinColumns = @JoinColumn(name = "id_grupo"),
+            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
+    private List<Discente> diretores;
 
     @ManyToMany
     @JoinTable(name = "grupo_discente",
