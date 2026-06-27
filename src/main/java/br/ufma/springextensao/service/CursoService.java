@@ -61,7 +61,7 @@ public class CursoService {
      * @return curso/ppc persistido no banco
      **/
     @Transactional
-    public Curso cadastraCurso(Usuario solicitante, CursoDTO curso) {
+    public Curso cadastrarCurso(Usuario solicitante, CursoDTO curso) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
@@ -102,7 +102,7 @@ public class CursoService {
         return cursoRepo.findById(id).orElse(null);
     }
 
-    public List<Curso> buscarHistorico() {
+    public List<Curso> listaHistorico() {
         return cursoRepo.findAll();
     }
 }
