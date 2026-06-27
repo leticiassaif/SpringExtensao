@@ -5,6 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface CursoRepo
         extends JpaRepository<Curso, Integer> {
@@ -12,5 +15,7 @@ public interface CursoRepo
     Curso findVigente();
 
     @Query("SELECT c from Curso c ORDER BY c.dataInicio DESC")
-    Curso findHistorico();
+    List<Curso> findHistorico();
+
+    Optional<Curso> findByVersao(String curriculo);
 }

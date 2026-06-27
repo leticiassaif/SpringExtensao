@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
 import static br.ufma.springextensao.util.Validacao.formataDataIso;
@@ -83,10 +84,25 @@ public class CursoService {
         return cursoRepo.save(c);
     }
 
+    public Curso buscarPorVersao(String versao) {
+        if (versao == null) {
+            throw new IllegalArgumentException("Versão inválida");
+        }
+        return cursoRepo.findByVersao(versao).orElse(null);
+    }
+
+    public Curso buscarVigente() {
+        return cursoRepo.findVigente();
+    }
+
     public Curso buscaPorId(Integer id) {
         if (id == null) {
             throw new IllegalArgumentException("ID inválido.");
         }
         return cursoRepo.findById(id).orElse(null);
+    }
+
+    public List<Curso> buscarHistorico() {
+        return cursoRepo.findAll();
     }
 }
