@@ -142,7 +142,7 @@ public class UsuarioService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
-        Papel diretor = papelRepo.findByNome("DISCENTE DIRETOR");
+        Papel diretor = papelRepo.findByNome("DIRETOR");
         discente.getCargos().add(diretor);
 
         return usuarioRepo.save(discente);

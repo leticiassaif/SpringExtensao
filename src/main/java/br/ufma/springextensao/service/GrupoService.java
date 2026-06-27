@@ -88,7 +88,7 @@ public class GrupoService {
     public Grupo aprovar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
-        Papel diretor = papelRepo.findByNome("DISCENTE DIRETOR");
+        Papel diretor = papelRepo.findByNome("DIRETOR");
 
         Grupo grupo = buscaPorId(id);
 
