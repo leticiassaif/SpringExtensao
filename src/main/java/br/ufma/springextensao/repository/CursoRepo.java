@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface CursoRepo
         extends JpaRepository<Curso, Integer> {
     @Query("SELECT c from Curso c WHERE c.dataFim IS NULL")
-    Optional<Usuario> findVigente();
+    Curso findVigente();
 
     @Query("SELECT c from Curso c ORDER BY c.dataInicio DESC")
     List<Curso> findHistorico();
