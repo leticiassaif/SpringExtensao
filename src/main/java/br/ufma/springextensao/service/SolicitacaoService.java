@@ -8,7 +8,7 @@ import br.ufma.springextensao.model.Solicitacao;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.SolicitacaoRepo;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

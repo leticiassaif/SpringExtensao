@@ -2,12 +2,11 @@ package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.controller.dtos.DiscenteDTO;
 import br.ufma.springextensao.controller.dtos.DocenteDTO;
-import br.ufma.springextensao.controller.dtos.UsuarioDTO;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +22,9 @@ public class UsuarioService {
 
     @Autowired
     PapelRepo papelRepo;
+
     @Autowired
-    private GrupoService grupoService;
+    GrupoService grupoService;
 
     /**
      * Essa função cadastra um novo discente
@@ -32,14 +32,14 @@ public class UsuarioService {
      * @return Discente persistido no banco
      **/
     public Discente cadastrarDiscente(DiscenteDTO discente) {
-        Discente discenteNovo;
+        Discente dis;
         Curso curso = cursoRepo.findById(discente.getIdCurso()).orElse(null);
 
         if (curso == null) {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
         }
 
-        discenteNovo = Discente.builder().
+        dis = Discente.builder().
                 nome(discente.getNome()).
                 email(discente.getEmail()).
                 senha(discente.getSenha()).
@@ -49,7 +49,7 @@ public class UsuarioService {
                 curso(curso).
                 build();
 
-        return usuarioRepo.save(discenteNovo);
+        return usuarioRepo.save(dis);
     }
 
     /**

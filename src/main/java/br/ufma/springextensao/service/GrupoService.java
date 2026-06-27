@@ -6,7 +6,7 @@ import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.GrupoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
