@@ -10,7 +10,6 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.print.Doc;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
@@ -235,7 +234,7 @@ public class GrupoService {
         return usuarioRepo.save(discente);
     }
 
-    public Discente atribuirCargo() {}
+    //public Discente atribuirCargo() {}
 
     /**
      * Essa função remove um discente de um grupo
@@ -299,7 +298,7 @@ public class GrupoService {
         return discente.getGrupos().contains(grupo);
     }
 
-    public Discente buscarMembroPorCargo() {}
+    //public Discente buscarMembroPorCargo() {}
 
     /**
      * Essa função lista todos os grupos
