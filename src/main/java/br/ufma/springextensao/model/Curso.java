@@ -1,12 +1,19 @@
 package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
-@Entity
 @Data
+@Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "curso")
 public class Curso {
     @Id
@@ -23,6 +30,14 @@ public class Curso {
     // ppc
     @Column(name="curriculo")
     private String curriculo;
+
+    // data de fim da vigência do ppc
+    @Column(name = "data_inicio")
+    private LocalDate dataInicio;
+
+    // data de fim da vigência do ppc
+    @Column(name = "data_fim")
+    private LocalDate dataFim;
 
     @OneToMany(mappedBy = "curso")
     private List<Discente> discentes;
