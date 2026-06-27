@@ -32,8 +32,8 @@ public class SolicitacaoController {
 
     @PatchMapping("/indeferir/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Solicitacao indeferir(@PathVariable Integer id) {
-        return solicitacaoService.indeferir(, id, );
+    public Solicitacao indeferir(@PathVariable Integer id, @RequestParam String parecer) {
+        return solicitacaoService.indeferir(, id, parecer);
     }
 
     @PatchMapping("/reenviar/{id}")
