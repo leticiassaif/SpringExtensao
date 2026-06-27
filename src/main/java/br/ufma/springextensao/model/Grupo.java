@@ -23,7 +23,7 @@ public class Grupo {
     @Column(name = "nome")
     private String nome;
 
-    @Column(name = "descricao") // *
+    @Column(name = "descricao")
     private String descricao;
 
     @Column(name = "email")
@@ -44,10 +44,6 @@ public class Grupo {
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Docente responsavel;
-
-//    @ManyToOne
-//    @JoinColumn(name = "id_usuario")
-//    private Discente diretor;
 
     // discentes que possuem cargos (diretor, vice-diretor, tesoureiro)
     @ManyToMany

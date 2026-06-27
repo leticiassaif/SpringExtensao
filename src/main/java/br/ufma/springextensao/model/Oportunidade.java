@@ -58,6 +58,7 @@ public class Oportunidade {
             inverseJoinColumns = @JoinColumn(name = "id_usuario"))
     private List<Usuario> discentesOp;
 
+    // verificar se realmente são mais de um
     // docente(s) responsável(eis)
     @ManyToMany
     @JoinTable(name = "oportunidade_coordenador",
