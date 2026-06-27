@@ -1,2 +1,2 @@
 -- Papéis
-INSERT INTO papel
+INSERT INTO papel VALUES (name, )
