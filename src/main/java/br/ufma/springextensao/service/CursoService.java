@@ -24,6 +24,7 @@ public class CursoService {
     @Autowired
     PapelRepo papelRepo;
 
+    // verificar necessidade
     /**
      * Essa função cria um novo curso (PPC) vigente
      * @param solicitante quem chamou a função

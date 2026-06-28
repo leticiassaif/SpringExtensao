@@ -241,7 +241,7 @@ public class UsuarioService {
         if (!isEmailValido(email)) {
             throw new IllegalArgumentException("Email inválido.");
         }
-        return usuarioRepo.findByEmail(email);
+        return usuarioRepo.findByEmail(email).orElse(null);
     }
 
     /**

@@ -15,9 +15,6 @@ public class SolicitacaoController {
     @Autowired
     SolicitacaoService solicitacaoService;
 
-    @Autowired
-    UsuarioService usuarioService;
-
     @PostMapping("/submeter")
     @ResponseStatus(HttpStatus.CREATED)
     public Solicitacao submeter(@RequestBody SolicitacaoDTO solicitacao) {
