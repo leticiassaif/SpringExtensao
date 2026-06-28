@@ -47,12 +47,6 @@ public class UsuarioController {
         return usuarioService.promoverDocente(, cargo, id);
     }
 
-    @PatchMapping("/promover/discente/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public Discente promoverDiscente(@PathVariable Integer id) {
-        return usuarioService.promoverDiscente(id);
-    }
-
     @PatchMapping("/desativar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Usuario desativar(@PathVariable Integer id) {

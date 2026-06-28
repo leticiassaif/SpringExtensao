@@ -8,4 +8,4 @@ INSERT INTO papel (nome) VALUES ('COORDENADOR') ON CONFLICT DO NOTHING; -- docen
 INSERT INTO papel (nome) VALUES ('DIRETOR') ON CONFLICT DO NOTHING; -- discente
 INSERT INTO papel (nome) VALUES ('VICE-DIRETOR') ON CONFLICT DO NOTHING; -- discente
 INSERT INTO papel (nome) VALUES ('TESOUREIRO') ON CONFLICT DO NOTHING; -- discente
--- criar cargo p/ membro
+INSERT INTO papel (nome) VALUES ('MEMBRO') ON CONFLICT DO NOTHING; -- discente
