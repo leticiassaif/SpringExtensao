@@ -21,8 +21,8 @@ public class OportunidadeController {
     private OportunidadeService service;
 
     @PostMapping
-    public Oportunidade criaOportunidade(@RequestBody OportunidadeDTO dto) {
-        return service.criaOportunidade(dto);
+    public Oportunidade criaOportunidade(@RequestBody OportunidadeDTO dto, @RequestBody Usuario solicitante) {
+        return service.criaOportunidade(dto, solicitante);
     }
 
     @PostMapping("/publicar/{id}")
@@ -32,11 +32,26 @@ public class OportunidadeController {
 
     @PostMapping("/aprovar/{id}")
     public Oportunidade aprovarOportunidade(@PathVariable Integer id, @RequestBody Usuario solicitante) {
-        return service.publicarOportunidade(id, solicitante);
+        return service.aprovarOportunidade(id, solicitante);
     }
 
-    @GetMapping("/oportunidade")
-    public List<Oportunidade> listarOportunidades() {
+    @PostMapping("/iniciar/{id}")
+    public Oportunidade iniciarOportunidade(@PathVariable Integer id, @RequestBody Usuario solicitante) {
+        return service.iniciarOportunidade(id, solicitante);
+    }
+
+    @PostMapping("/encerrar/{id}")
+    public Oportunidade encerrarOportunidade(@PathVariable Integer id, @RequestBody Usuario solicitante) {
+        return service.encerrarOportunidade(id, solicitante);
+    }
+
+    @PostMapping
+    public Oportunidade cancelarOportunidade(@PathVariable Integer id, @RequestBody Usuario solicitante) {
+        return service.cancelarOportunidade(id, solicitante);
+    }
+
+    @GetMapping
+    public List <Oportunidade> listarOportunidades() {
         return service.listarOportunidades();
     }
 

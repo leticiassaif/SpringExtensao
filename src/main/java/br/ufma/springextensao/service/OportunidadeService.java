@@ -3,8 +3,10 @@ package br.ufma.springextensao.service;
 import br.ufma.springextensao.controller.dtos.OportunidadeDTO;
 import br.ufma.springextensao.enums.StatusOp;
 import br.ufma.springextensao.model.Oportunidade;
+import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.OportunidadeRepo;
+import br.ufma.springextensao.repository.PapelRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +20,13 @@ public class OportunidadeService {
     @Autowired
     private OportunidadeRepo oportunidadeRepo;
 
+    @Autowired
+    PapelRepo papelRepo;
+
+    @Autowired
+    UsuarioService usuarioService;
+
     public Oportunidade buscarOportunidadePorId(Integer id) {
-        if (id == null)
-            throw new IllegalArgumentException("ID é obrigatório.");
         return oportunidadeRepo.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Oportunidade não encontrada!"));
     }
@@ -30,7 +36,12 @@ public class OportunidadeService {
     @return oportunidade salva no repo
      */
 
-    public Oportunidade criaOportunidade(OportunidadeDTO oportunidade) {
+    public Oportunidade criaOportunidade(OportunidadeDTO oportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel diretor = papelRepo.findByNome("DISCENTE_DIRETOR");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
+
         if (oportunidade.getTitulo() == null || oportunidade.getTitulo().isBlank()){
             throw new IllegalArgumentException("Título é obrigatório.");
         }
@@ -54,19 +65,23 @@ public class OportunidadeService {
             throw new IllegalArgumentException("Data de início não pode ser no passado.");
         }
 
-        // Usar a função para hasPermissao
+        if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, diretor)
+                || UsuarioService.hasPermissao(solicitante, coordenador)) {
 
-        Oportunidade nova = Oportunidade.builder()
-                .titulo(oportunidade.getTitulo())
-                .descricao(oportunidade.getDescricao())
-                .cargaHoraria(oportunidade.getCargaHoraria())
-                .vagas(oportunidade.getVagas())
-                .dataInicio(inicio)
-                .dataFim(oportunidade.getDataFim())
-                .status(StatusOp.RASCUNHO)
-                .build();
+            Oportunidade nova = Oportunidade.builder()
+                    .titulo(oportunidade.getTitulo())
+                    .descricao(oportunidade.getDescricao())
+                    .cargaHoraria(oportunidade.getCargaHoraria())
+                    .vagas(oportunidade.getVagas())
+                    .dataInicio(inicio)
+                    .dataFim(oportunidade.getDataFim())
+                    .status(StatusOp.RASCUNHO)
+                    .build();
 
-        return oportunidadeRepo.save(nova);
+            return oportunidadeRepo.save(nova);
+        }
+
+        throw new IllegalArgumentException("Usuário não tem permissão para criar oportunidades!");
     }
 
     /**
@@ -76,18 +91,23 @@ public class OportunidadeService {
      * @return oportunidade atualizada como Aguardando aprovação ou Aberta
      */
     public Oportunidade publicarOportunidade(Integer idOportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel diretor = papelRepo.findByNome("DISCENTE_DIRETOR");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
         if (oportunidade == null) {
             throw new IllegalArgumentException("Oportunidade não encontrada.");
         }
 
-//        if (UsuarioService.hasPermissao(solicitante, papelDiscenteDiretor)) {
-//            oportunidade.setStatus(StatusOportunidade.AGUARDANDO_APROVACAO);
-//        } else if (UsuarioService.hasPermissao(solicitante, papelDocente) || UsuarioService.hasPermissao(solicitante, papelDocente) ) {
-//            oportunidade.setStatus(StatusOportunidade.ABERTA);
-//        } else {
-//            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
-//        }
+        if (UsuarioService.hasPermissao(solicitante, diretor)) {
+            oportunidade.setStatus(StatusOp.AGUARDA_APROVACAO);
+        } else if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, coordenador) ) {
+            oportunidade.setStatus(StatusOp.ABERTA);
+        } else {
+            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
+        }
 
         return oportunidadeRepo.save(oportunidade);
     }
@@ -100,21 +120,25 @@ public class OportunidadeService {
      * @return oportunidade salva com novo status, ou null se não condizer com as regras de negocio
      */
     public Oportunidade aprovarOportunidade(Integer idOportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel admin = papelRepo.findByNome("ADMIN");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
 
-        if(oportunidade == null) {
+        if (oportunidade == null) {
             throw new IllegalArgumentException("Oportunidade não encontrada.");
         }
 
-//        if (UsuarioService.hasPermissao(solicitante, papelDocente) || UsuarioService.hasPermissao(solicitante, papelAdmin) ) {
-//                if (oportunidade.getStatus == StatusOportunidade.AGUARDANDO_APROVACAO) {
-//                    oportunidade.setStatus(StatusOportunidade.ABERTA);
-//                    return oportunidadeRepo.save(oportunidade);
-//                }
-//        } else {
-//            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
-
-        return null;
+        if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, admin)) {
+            if (oportunidade.getStatus() == StatusOp.AGUARDA_APROVACAO) {
+                oportunidade.setStatus(StatusOp.ABERTA);
+                return oportunidadeRepo.save(oportunidade);
+            }
+        } else {
+            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
+        }
+            return null;
     }
 
     /**
@@ -122,23 +146,25 @@ public class OportunidadeService {
      * @param idOportunidade
      * @param solicitante
      * @return oportunidade salva com novo status, ou null se não condizer com as regras de negocio
-     */
+ */
     public Oportunidade iniciarOportunidade(Integer idOportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel admin = papelRepo.findByNome("ADMIN");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
 
         if(oportunidade == null) {
             throw new IllegalArgumentException("Oportunidade não encontrada.");
         }
 
-//        if (UsuarioService.hasPermissao(solicitante, papelDocente) || UsuarioService.hasPermissao(solicitante, papelAdmin) ) {
-//                if (oportunidade.getStatus == StatusOportunidade.ABERTA) {
-//                    oportunidade.setStatus(StatusOportunidade.EM_EXECUCAO);
-//                    return oportunidadeRepo.save(oportunidade);
-//                }
-//        } else {
-//            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
-
-        return null;
+        if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, admin) ) {
+            if (oportunidade.getStatus() == StatusOp.ABERTA) {
+                oportunidade.setStatus(StatusOp.EM_EXECUCAO);
+                return oportunidadeRepo.save(oportunidade);
+            }
+        }
+        throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
     }
 
     /**
@@ -148,21 +174,23 @@ public class OportunidadeService {
      * @return oportunidade salva com novo status, ou null se não condizer com as regras de negocio
      */
     public Oportunidade encerrarOportunidade(Integer idOportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel admin = papelRepo.findByNome("ADMIN");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
 
         if(oportunidade == null) {
             throw new IllegalArgumentException("Oportunidade não encontrada.");
         }
 
-//        if (UsuarioService.hasPermissao(solicitante, papelDocente) || UsuarioService.hasPermissao(solicitante, papelAdmin) ) {
-//                if (oportunidade.getStatus == StatusOportunidade.EM_EXECUCAO) {
-//                    oportunidade.setStatus(StatusOportunidade.ENCERRADA);
-//                    return oportunidadeRepo.save(oportunidade);
-//                }
-//        } else {
-//            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
-
-        return null;
+        if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, admin) ) {
+                if (oportunidade.getStatus() == StatusOp.EM_EXECUCAO) {
+                    oportunidade.setStatus(StatusOp.ENCERRADA);
+                    return oportunidadeRepo.save(oportunidade);
+                }
+        }
+            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
     }
 
     /**
@@ -172,20 +200,22 @@ public class OportunidadeService {
      * @return oportunidade salva com novo status, ou null se não condizer com as regras de negocio
      */
     public Oportunidade cancelarOportunidade(Integer idOportunidade, Usuario solicitante) {
+
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel admin = papelRepo.findByNome("ADMIN");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
 
         if(oportunidade == null) {
             throw new IllegalArgumentException("Oportunidade não encontrada.");
         }
 
-//        if (UsuarioService.hasPermissao(solicitante, papelDocente) || UsuarioService.hasPermissao(solicitante, papelAdmin) {
-//                    oportunidade.setStatus(StatusOportunidade.ENCERRADA);
-//                    return oportunidadeRepo.save(oportunidade);
-//                }
-//        } else {
-//            throw new IllegalArgumentException("Usuário não tem permissão para publicar.");
+        if (UsuarioService.hasPermissao(solicitante, docente) || UsuarioService.hasPermissao(solicitante, admin)) {
+                    oportunidade.setStatus(StatusOp.CANCELADA);
+                    return oportunidadeRepo.save(oportunidade);
+                }
+        else {throw new IllegalArgumentException("Usuário não tem permissão para publicar.");}
 
-        return null;
     }
 
     /**
