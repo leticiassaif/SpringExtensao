@@ -24,8 +24,8 @@ public class GrupoController {
 
     @PatchMapping("/aprovar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Grupo aprovar(@PathVariable Integer id) {
-        return grupoService.aprovar(, id);
+    public Grupo aprovar(@PathVariable Integer idGrupo, @RequestParam Integer idDiscente) {
+        return grupoService.aprovar(, idGrupo, idDiscente);
     }
 
     @PatchMapping("/rejeitar/{id}")
@@ -46,7 +46,19 @@ public class GrupoController {
         return grupoService.removerMembro(, idGrupo, idDiscente);
     }
 
-    // atribuir e remover cargo
+    @PatchMapping("/atribuircargo/{idGrupo}/{idDiscente}")
+    @ResponseStatus(HttpStatus.OK)
+    public Grupo atribuirCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
+                               @RequestParam String cargo) {
+        return grupoService.atribuirCargo(, idDiscente, idGrupo, cargo);
+    }
+
+    @PatchMapping("/removercargo/{idGrupo}/{idDiscente}")
+    @ResponseStatus(HttpStatus.OK)
+    public Grupo removerCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
+                               @RequestParam String cargo) {
+        return grupoService.removerCargo(, idDiscente, idGrupo, cargo);
+    }
 
     @GetMapping("/id/{id}")
     public Grupo buscaId(@PathVariable Integer id) {
