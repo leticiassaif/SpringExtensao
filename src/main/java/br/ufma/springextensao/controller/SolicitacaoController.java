@@ -1,16 +1,12 @@
 package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.SolicitacaoDTO;
-import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Solicitacao;
 import br.ufma.springextensao.service.SolicitacaoService;
 import br.ufma.springextensao.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,8 +20,26 @@ public class SolicitacaoController {
 
     @PostMapping("/submeter")
     @ResponseStatus(HttpStatus.CREATED)
-    public Solicitacao submeterNovaSolicitacao(@RequestBody SolicitacaoDTO solicitacao) {
+    public Solicitacao submeter(@RequestBody SolicitacaoDTO solicitacao) {
         return solicitacaoService.submeter(solicitacao);
+    }
+
+    @PatchMapping("/aprovar/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Solicitacao aprovar(@PathVariable Integer id) {
+        return solicitacaoService.aprovar(, id);
+    }
+
+    @PatchMapping("/indeferir/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Solicitacao indeferir(@PathVariable Integer id) {
+        return solicitacaoService.indeferir(, id, );
+    }
+
+    @PatchMapping("/reenviar/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Solicitacao reenviar(@PathVariable Integer id) {
+        return solicitacaoService.reenviar(id);
     }
 
     @GetMapping("/{id}")
@@ -42,6 +56,4 @@ public class SolicitacaoController {
     public List<Solicitacao> listarPendentes() {
         return solicitacaoService.listarPendentes();
     }
-
-    // fazer de aprovar, indeferir e reenviar
 }

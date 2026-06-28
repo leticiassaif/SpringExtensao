@@ -30,6 +30,14 @@ public class Discente extends Usuario {
     @OneToMany(mappedBy = "discente")
     private List<Solicitacao> solicitacoes;
 
+//    // grupos em que o discente possui cargo
+    @ManyToMany(mappedBy = "diretores")
+    private List<Grupo> gruposDiretores;
+
+//    @OneToMany(mappedBy = "diretor")
+//    private List<Grupo> gruposDiretor;
+
+    // grupos em que o discente apenas participa
     @ManyToMany(mappedBy = "discentesGrupo")
     private List<Grupo> grupos;
 

@@ -2,11 +2,18 @@ package br.ufma.springextensao.model;
 
 import br.ufma.springextensao.enums.Status;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
 @Entity
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "grupo")
 public class Grupo {
     @Id
@@ -22,8 +29,6 @@ public class Grupo {
     @Column(name = "email")
     private String email;
 
-    // private discente solicitante
-
     @Transient // *
     private String justificativaNegacao;
 
@@ -35,12 +40,21 @@ public class Grupo {
     @JoinColumn(name = "id_curso")
     private Curso curso;
 
-    // docente(s) responsável(eis)
+    // docente responsável
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Docente responsavel;
+
+//    @ManyToOne
+//    @JoinColumn(name = "id_usuario")
+//    private Discente diretor;
+
+    // discentes que possuem cargos (diretor, vice-diretor, tesoureiro)
     @ManyToMany
-    @JoinTable(name = "grupo_docente",
+    @JoinTable(name = "grupo_diretores",
             joinColumns = @JoinColumn(name = "id_grupo"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Usuario> docentes;
+    private List<Discente> diretores;
 
     @ManyToMany
     @JoinTable(name = "grupo_discente",
