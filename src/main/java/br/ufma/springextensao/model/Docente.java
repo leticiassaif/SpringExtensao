@@ -20,7 +20,7 @@ public class Docente extends Usuario {
     @Column(name = "departamento")
     private String departamento;
 
-    @ManyToMany(mappedBy = "coordenadores")
+    @OneToMany(mappedBy = "coordenador")
     private List<Oportunidade> oportunidades;
 
     @OneToMany(mappedBy = "responsavel")

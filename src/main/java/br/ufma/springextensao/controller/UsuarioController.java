@@ -9,7 +9,6 @@ import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -44,14 +43,8 @@ public class UsuarioController {
 
     @PatchMapping("/promover/docente/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Docente promoverDocente(@PathVariable Integer id) {
-        return usuarioService.promoverDocente(, , id);
-    }
-
-    @PatchMapping("/promover/discente/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public Discente promoverDiscente(@PathVariable Integer id) {
-        return usuarioService.promoverDiscente(id);
+    public Docente promoverDocente(@PathVariable Integer id, @RequestParam String cargo) {
+        return usuarioService.promoverDocente(, cargo, id);
     }
 
     @PatchMapping("/desativar/{id}")

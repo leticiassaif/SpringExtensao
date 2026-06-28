@@ -15,7 +15,7 @@ public class Tipo {
     private Integer id;
 
     @Column(name = "tipo")
-    private String tipo; // nome do tipo
+    private String nome; // nome do tipo
 
     @OneToMany(mappedBy = "tipo")
     private List<Oportunidade> oportunidades;

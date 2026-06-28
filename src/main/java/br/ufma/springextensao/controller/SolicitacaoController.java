@@ -15,9 +15,6 @@ public class SolicitacaoController {
     @Autowired
     SolicitacaoService solicitacaoService;
 
-    @Autowired
-    UsuarioService usuarioService;
-
     @PostMapping("/submeter")
     @ResponseStatus(HttpStatus.CREATED)
     public Solicitacao submeter(@RequestBody SolicitacaoDTO solicitacao) {
@@ -25,19 +22,19 @@ public class SolicitacaoController {
     }
 
     @PatchMapping("/aprovar/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public Solicitacao aprovar(@PathVariable Integer id) {
         return solicitacaoService.aprovar(, id);
     }
 
     @PatchMapping("/indeferir/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Solicitacao indeferir(@PathVariable Integer id) {
-        return solicitacaoService.indeferir(, id, );
+    @ResponseStatus(HttpStatus.OK)
+    public Solicitacao indeferir(@PathVariable Integer id, @RequestParam String parecer) {
+        return solicitacaoService.indeferir(, id, parecer);
     }
 
     @PatchMapping("/reenviar/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public Solicitacao reenviar(@PathVariable Integer id) {
         return solicitacaoService.reenviar(id);
     }
