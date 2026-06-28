@@ -17,6 +17,9 @@ public class Papel {
     @Column(name = "nome")
     private String nome; // nome do papel
 
+    @OneToMany
+    private List<GrupoMembro> historicoPapel;
+
     @ManyToMany(mappedBy = "cargos")
-    private List<Usuario> docentes;
+    private List<Usuario> usuarios;
 }

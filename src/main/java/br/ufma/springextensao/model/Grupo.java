@@ -18,6 +18,7 @@ import java.util.List;
 public class Grupo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_grupo")
     private Integer id;
 
     @Column(name = "nome")
@@ -45,16 +46,19 @@ public class Grupo {
     @JoinColumn(name = "id_usuario")
     private Docente responsavel;
 
-    // discentes que possuem cargos (diretor, vice-diretor, tesoureiro)
-    @ManyToMany
-    @JoinTable(name = "grupo_diretores",
-            joinColumns = @JoinColumn(name = "id_grupo"),
-            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Discente> diretores;
-
+//    // discentes que possuem cargos (diretor, vice-diretor, tesoureiro)
+//    @ManyToMany
+//    @JoinTable(name = "grupo_diretores",
+//            joinColumns = @JoinColumn(name = "id_grupo"),
+//            inverseJoinColumns = @JoinColumn(name = "id_usuario"))
+//    private List<Discente> diretores;
+//
     @ManyToMany
     @JoinTable(name = "grupo_discente",
             joinColumns = @JoinColumn(name = "id_grupo"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Usuario> discentesGrupo;
+    private List<Discente> membros; // ou usuário?
+
+    @OneToMany(mappedBy = "grupo")
+    private List<GrupoMembro> membrosHistorico;
 }

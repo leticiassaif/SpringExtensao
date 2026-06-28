@@ -19,7 +19,7 @@ public class GrupoController {
     @PostMapping("/criar")
     @ResponseStatus(HttpStatus.CREATED)
     public Grupo criarGrupo(@RequestBody GrupoDTO grupo) {
-        return grupoService.criar(grupo);
+        return grupoService.criar(grupo, );
     }
 
     @PatchMapping("/aprovar/{id}")
