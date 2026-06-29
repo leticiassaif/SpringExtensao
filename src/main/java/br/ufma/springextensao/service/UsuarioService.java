@@ -6,6 +6,7 @@ import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import br.ufma.springextensao.model.Papel;
@@ -29,6 +30,8 @@ public class UsuarioService {
     @Autowired
     GrupoService grupoService;
 
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
     /**
      * Essa função cadastra um novo discente
      * @param discente objeto para transferir informação
@@ -42,10 +45,12 @@ public class UsuarioService {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
         }
 
+        String hash = encoder.encode(discente.getSenha());
+
         dis = Discente.builder().
                 nome(discente.getNome()).
                 email(discente.getEmail()).
-                senha(discente.getSenha()).
+                senha(hash).
                 ativo(true).
                 matricula(discente.getMatricula()).
                 cargaHoraria(discente.getCargaHoraria()).
@@ -67,6 +72,8 @@ public class UsuarioService {
         if (!hasPermissao(solicitante, admin)) {
             throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
         }
+
+        String hash = encoder.encode(docente.getSenha());
 
         Docente docenteNovo = Docente.builder().
                 nome(docente.getNome()).
@@ -123,33 +130,33 @@ public class UsuarioService {
         return usuarioRepo.save(docente);
     }
 
-    /**
-     * Essa função promove um discente para discente diretor
-     * @param id id do discente que deseja promover
-     * @return discente persistido no banco
-     **/
-    @Transactional
-    public Discente promoverDiscente(Integer id) {
-        // verificar se precisa de hasPermissao
-        if (id == null) {
-            throw new IllegalArgumentException("ID inválido.");
-        }
-
-        Usuario usuario = buscarPorId(id);
-
-        if (usuario == null) {
-            throw new IllegalArgumentException("Usuário não existe.");
-        }
-
-        if (!(usuario instanceof Discente discente)) {
-            throw new IllegalArgumentException("Usuário não é discente.");
-        }
-
-        Papel diretor = papelRepo.findByNome("DIRETOR");
-        discente.getCargos().add(diretor);
-
-        return usuarioRepo.save(discente);
-    }
+//    /**
+//     * Essa função promove um discente para discente diretor
+//     * @param id id do discente que deseja promover
+//     * @return discente persistido no banco
+//     **/
+//    @Transactional
+//    public Discente promoverDiscente(Integer id) {
+//        // verificar se precisa de hasPermissao
+//        if (id == null) {
+//            throw new IllegalArgumentException("ID inválido.");
+//        }
+//
+//        Usuario usuario = buscarPorId(id);
+//
+//        if (usuario == null) {
+//            throw new IllegalArgumentException("Usuário não existe.");
+//        }
+//
+//        if (!(usuario instanceof Discente discente)) {
+//            throw new IllegalArgumentException("Usuário não é discente.");
+//        }
+//
+//        Papel diretor = papelRepo.findByNome("DIRETOR");
+//        discente.getCargos().add(diretor);
+//
+//        return usuarioRepo.save(discente);
+//    }
 
     /**
      * Essa função desativa a conta de um usuário
@@ -216,12 +223,16 @@ public class UsuarioService {
     /**
      * Essa função autentica um usuário no login
      * @param email o email do usuário que se deseja achar
-     * @param senha a senha do usuário hasheada
+     * @param senha a senha do usuário em formato hash
      * @return o usuário buscado, nulo se não existir
      **/
     public Usuario autenticar(String email, String senha) {
-        if (email == null || senha == null) {
-            throw new IllegalArgumentException("Campo(s) obrigatório(s) inválido(s).");
+        if (!isEmailValido(email)) {
+            throw new IllegalArgumentException("Email inválido.");
+        }
+
+        if (senha == null || senha.isBlank()) {
+            throw new IllegalArgumentException("Senha inválida.");
         }
 
         Usuario usuario = buscarPorEmail(email);
@@ -230,7 +241,9 @@ public class UsuarioService {
             throw new IllegalArgumentException("Nenhum usuário possui esse email.");
         }
 
-        // fazer checagem de senha com hash
+        if (!encoder.matches(senha, usuario.getSenha())) {
+            throw new SecurityException("Senha incorreta.");
+        }
 
         return usuario;
     }
