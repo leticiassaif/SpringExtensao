@@ -40,6 +40,9 @@ public class Curso {
     private LocalDate dataFim;
 
     @OneToMany(mappedBy = "curso")
+    private List<UCE> uces;
+
+    @OneToMany(mappedBy = "curso")
     private List<Discente> discentes;
 
     @OneToMany(mappedBy = "curso")
