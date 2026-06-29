@@ -1,11 +1,11 @@
 package br.ufma.springextensao.model;
 
+import br.ufma.springextensao.enums.Status;
 import br.ufma.springextensao.enums.StatusOp;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,7 +14,6 @@ import java.util.List;
 @Data
 @Table(name = "oportunidade")
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class Oportunidade {
     @Id
@@ -25,13 +24,13 @@ public class Oportunidade {
     @Column(name = "titulo")
     private String titulo;
 
-    @Column(name = "descricao")
     private String descricao;
+    // modalidade (enum)
 
     @Column(name = "carga_horaria")
     private Integer cargaHoraria;
 
-    @Column(name = "vagas")
+//    @Column(name = "vagas") necessário?
     private int vagas;
 
     @Column(name = "data_inicio")
@@ -41,13 +40,13 @@ public class Oportunidade {
     private LocalDate dataFim;
 
     @Column(name = "status")
-    private StatusOp status;
+    private Enum <StatusOp> status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_curso")
     private Curso curso;
 
-    @ManyToOne //(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "id_tipo")
     private Tipo tipo;
 
@@ -62,4 +61,13 @@ public class Oportunidade {
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario coordenador;
+    @ManyToMany
+    @JoinTable(name = "oportunidade_coordenador",
+                joinColumns = @JoinColumn(name = "id_oportunidade"),
+                inverseJoinColumns = @JoinColumn(name = "id_usuario"))
+    private List<Usuario> coodernadores;
+
+    public Oportunidade() {
+
+    }
 }
