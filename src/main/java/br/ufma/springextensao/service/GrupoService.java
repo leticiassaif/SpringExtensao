@@ -61,6 +61,7 @@ public class GrupoService {
                 //curso(curso).
                 responsavel(docente).
                 membros(new ArrayList<>()).
+                membrosHistorico(new ArrayList<>()).
                 status(Status.PENDENTE).
                 build();
 
@@ -117,6 +118,7 @@ public class GrupoService {
      * @param id id do grupo que se deseja rejeitar
      * @return grupo persistido no banco
      **/
+    @Transactional
     public Grupo rejeitar(Usuario solicitante, Integer id, String justificativa) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");

@@ -14,6 +14,8 @@ import br.ufma.springextensao.model.Usuario;
 import org.springframework.stereotype.Service;
 
 
+import java.util.ArrayList;
+
 import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
 @Service
@@ -52,9 +54,14 @@ public class UsuarioService {
                 email(discente.getEmail()).
                 senha(hash).
                 ativo(true).
+                cargos(new ArrayList<>()).
                 matricula(discente.getMatricula()).
                 cargaHoraria(discente.getCargaHoraria()).
                 curso(curso).
+                solicitacoes(new ArrayList<>()).
+                grupos(new ArrayList<>()).
+                cargoHistorico(new ArrayList<>()).
+                oportunidades(new ArrayList<>()).
                 build();
 
         return usuarioRepo.save(dis);
@@ -80,8 +87,11 @@ public class UsuarioService {
                 email(docente.getEmail()).
                 senha(docente.getSenha()).
                 ativo(true).
+                cargos(new ArrayList<>()).
                 siape(docente.getSiape()).
                 departamento(docente.getDepartamento()).
+                oportunidades(new ArrayList<>()).
+                grupos(new ArrayList<>()).
                 build();
 
         return usuarioRepo.save(docenteNovo);
