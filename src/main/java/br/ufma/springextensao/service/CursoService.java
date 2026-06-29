@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
@@ -47,8 +48,12 @@ public class CursoService {
         }
 
         Curso c = Curso.builder().
+                nome("Ciência da Computação").
                 codigo(curso.getCodigo()).
                 curriculo(curso.getCurriculo()).
+                cargaHoraria(curso.getCargaHoraria()).
+                uces(new ArrayList<>()).
+                discentes(new ArrayList<>()).
                 build();
 
         Curso anterior = cursoRepo.findVigente();
