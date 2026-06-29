@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/usuario")
-import org.springframework.web.bind.annotation.RestController;
-
-@RestController
 public class UsuarioController {
     @Autowired
     UsuarioService usuarioService;
