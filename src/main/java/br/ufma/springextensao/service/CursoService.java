@@ -164,7 +164,7 @@ public class CursoService {
      * @param id id do curso/ppc desejado
      * @return lista das uces procuradas, lista vazia caso não exista
      **/
-    public List<UCE> buscaPorPPC(Integer id) {
+    public List<UCE> buscaUCEPorPPC(Integer id) {
         if (id == null) {
             throw new IllegalArgumentException("ID inválido.");
         }

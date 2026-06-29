@@ -1,7 +1,9 @@
 package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.CursoDTO;
+import br.ufma.springextensao.controller.dtos.UCEDTO;
 import br.ufma.springextensao.model.Curso;
+import br.ufma.springextensao.model.UCE;
 import br.ufma.springextensao.service.CursoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -39,5 +41,16 @@ public class CursoController {
     @GetMapping("/historico")
     public List<Curso> listaHistorico() {
         return cursoService.listaHistorico();
+    }
+
+    @PostMapping("/uce/cadastrar")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UCE cadastrarUCE(@RequestBody UCEDTO uce) {
+        return cursoService.cadastrarUCE(, uce);
+    }
+
+    @GetMapping("/uce/busca/{id}")
+    public List<UCE> buscaUCEporCurso(@PathVariable Integer id) {
+        return cursoService.buscaUCEPorPPC(id);
     }
 }
