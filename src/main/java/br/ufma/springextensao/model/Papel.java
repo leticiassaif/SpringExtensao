@@ -13,8 +13,13 @@ public class Papel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_papel")
     private Integer id;
-    private String papel; // nome do papel
+
+    @Column(name = "nome")
+    private String nome; // nome do papel
+
+    @OneToMany
+    private List<GrupoMembro> historicoPapel;
 
     @ManyToMany(mappedBy = "cargos")
-    private List<Usuario> docentes;
+    private List<Usuario> usuarios;
 }

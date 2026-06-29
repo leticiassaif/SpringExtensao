@@ -1,7 +1,11 @@
 package br.ufma.springextensao.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
@@ -9,25 +13,32 @@ import java.util.List;
 @Data
 @Table(name = "usuario")
 @Inheritance(strategy = InheritanceType.JOINED)
+@SuperBuilder
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
-    private Integer id;
+    protected Integer id;
 
     @Column(name = "nome")
-    private String nome;
+    protected String nome;
 
     @Column(name = "email")
-    private String email;
+    protected String email;
 
-    private String senha;
+    @Column(name = "senha")
+    protected String senha;
 
-    private boolean ativo;
+    @Column(name = "ativo")
+    protected boolean ativo;
 
     @ManyToMany
     @JoinTable(name = "usuario_papel",
                 joinColumns = @JoinColumn(name = "id_usuario"),
                 inverseJoinColumns = @JoinColumn(name = "id_papel"))
     List<Papel> cargos;
+
+    public Usuario() {
+
+    }
 }

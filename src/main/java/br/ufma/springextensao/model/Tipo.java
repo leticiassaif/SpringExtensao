@@ -13,7 +13,9 @@ public class Tipo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_tipo")
     private Integer id;
-    private String tipo; // nome do tipo
+
+    @Column(name = "tipo")
+    private String nome; // nome do tipo
 
     @OneToMany(mappedBy = "tipo")
     private List<Oportunidade> oportunidades;
