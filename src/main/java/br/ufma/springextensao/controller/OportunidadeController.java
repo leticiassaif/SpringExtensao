@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import br.ufma.springextensao.service.UsuarioService;
 
-import java.time.LocalDate;
 import java.util.List;
+import static br.ufma.springextensao.util.Sessao.logado;
 
 @RestController
 @RequestMapping("/api/oportunidade")
@@ -32,19 +32,13 @@ public class OportunidadeController {
 
     @PostMapping("/publicar/{id}")
     public Oportunidade publicarOportunidade(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return service.publicarOportunidade(id, solicitante);
     }
 
     @PostMapping("/aprovar/{id}")
     public Oportunidade aprovarOportunidade(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return service.aprovarOportunidade(id, solicitante);
     }
 

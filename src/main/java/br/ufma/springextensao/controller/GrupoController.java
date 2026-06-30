@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpSession;
 import br.ufma.springextensao.service.UsuarioService;
 
 import java.util.List;
+import static br.ufma.springextensao.util.Sessao.logado;
 
 @RestController
 @RequestMapping("/api/usuario")
@@ -25,50 +26,35 @@ public class GrupoController {
     @PostMapping("/criar")
     @ResponseStatus(HttpStatus.CREATED)
     public Grupo criarGrupo(@RequestBody GrupoDTO grupo, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer)session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.criar(grupo, solicitante);
     }
 
     @PatchMapping("/aprovar/{idGrupo}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo aprovar(@PathVariable Integer idGrupo, @RequestParam Integer idDiscente, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.aprovar(solicitante, idGrupo, idDiscente);
     }
 
     @PatchMapping("/rejeitar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo rejeitar(@PathVariable Integer id, @RequestParam String justificativa, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.rejeitar(solicitante, id, justificativa);
     }
 
     @PatchMapping("/addmembro/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo adicionarMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.adicionarMembro(solicitante, idGrupo, idDiscente);
     }
 
     @PatchMapping("/removemembro/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo removerMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.removerMembro(solicitante, idGrupo, idDiscente);
     }
 
@@ -76,10 +62,7 @@ public class GrupoController {
     @ResponseStatus(HttpStatus.OK)
     public Grupo atribuirCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
                                @RequestParam String cargo, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.atribuirCargo(solicitante, idDiscente, idGrupo, cargo);
     }
 
@@ -87,10 +70,7 @@ public class GrupoController {
     @ResponseStatus(HttpStatus.OK)
     public Grupo removerCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
                               @RequestParam String cargo, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return grupoService.removerCargo(solicitante, idDiscente, idGrupo, cargo);
     }
 
