@@ -1,14 +1,18 @@
 package br.ufma.extensao.servicos;
 
+import br.ufma.springextensao.controller.dtos.InscricaoDTO;
 import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Inscricao;
+import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.enums.Status;
 import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.enums.StatusOp;
 import br.ufma.springextensao.repository.InscricaoRepo;
+import br.ufma.springextensao.repository.PapelRepo;
 
+import br.ufma.springextensao.service.UsuarioService;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -17,37 +21,47 @@ import java.util.*;
 public class InscricaoService {
 
     private final InscricaoRepo inscricaoRepo;
+    private final PapelRepo papelRepo;
 
-    public InscricaoService(InscricaoRepo inscricaoRepository) {
+    public InscricaoService(InscricaoRepo inscricaoRepository, PapelRepo papelRepo) {
         this.inscricaoRepo = inscricaoRepository;
+        this.papelRepo = papelRepo;
     }
 
-    public Inscricao inscrever(Discente discente, Oportunidade oportunidade, String motivacao) {
-        if (discente == null || !discente.isAtivo() || oportunidade == null || motivacao == null) {
+    public Inscricao inscrever(InscricaoDTO inscricao) {
+
+        if (inscricao.getDiscente() == null || inscricao.getOportunidade() == null || inscricao.getMotivacao() == null) {
             throw new IllegalArgumentException("Dados obrigatórios ausentes.");
         }
 
-        if (oportunidade.getStatus() != StatusOportunidade.ABERTA) {
+        if (inscricao.getOportunidade().getStatus() != StatusOp.ABERTA) {
             throw new IllegalStateException("Oportunidade não está aberta para inscrições.");
         }
 
-        List<Inscricao> fila = inscricaoRepo.findByOportunidade(oportunidade);
+        List<Inscricao> fila = inscricaoRepo.findByOportunidade(inscricao.getOportunidade());
 
         for (Inscricao inscricaoExistente : fila) {
-            if (inscricaoExistente.getDiscente().equals(discente)) {
-                throw new IllegalStateException("O usuário " + discente.getNome() + " já foi inscrito na oportunidade");
+            if (inscricaoExistente.getDiscente().equals(inscricao.getDiscente())) {
+                throw new IllegalStateException("O usuário " + inscricao.getDiscente().getNome() + " já foi inscrito na oportunidade");
             }
         }
 
         //colocar geração de id
 
-        Inscricao inscricao = new Inscricao(id, discente, oportunidade, motivacao);
+        Inscricao nova = Inscricao.builder()
+                .motivacao(inscricao.getMotivacao())
+                .status(Status.PENDENTE)
+                .justificativaCancelamento(inscricao.getJustificativaCancelamento())
+                .dataInscricao(inscricao.getDataInscricao())
+                .discente(inscricao.getDiscente())
+                .oportunidade(inscricao.getOportunidade())
+                .build();
 
-        if (listarSlotsOcupados(oportunidade).size() >= oportunidade.getVagas()) {
-            inscricao.setStatus(StatusInscricao.LISTA_DE_ESPERA);
+        if (listarSlotsOcupados(inscricao.getOportunidade()).size() >= inscricao.getOportunidade().getVagas()) {
+            inscricao.setStatus(Status.ESPERA);
         }
 
-        return inscricaoRepo.save(inscricao);
+        return inscricaoRepo.save(nova);
     }
 
     private List<Inscricao> listarSlotsOcupados(Oportunidade oportunidade) {
@@ -61,19 +75,19 @@ public class InscricaoService {
         List<Inscricao> resultado = new ArrayList<>();
 
         for (Inscricao inscricao : fila) {
-            if (inscricao.getStatus().equals(Status.APROVADA) || inscricao.getStatus().equals(Status.PENDENTE)) {
+            if (inscricao.getStatus().equals(Status.APROVADO) || inscricao.getStatus().equals(Status.PENDENTE)) {
                 resultado.add(inscricao);
             }
         }
         return resultado;
     }
 
-    private Inscricao buscarInscricao(String inscricaoId, Oportunidade oportunidade) {
+    private Inscricao buscarInscricao(Integer inscricaoId, Oportunidade oportunidade) {
         if (oportunidade == null) {
             throw new IllegalArgumentException("Campos obrigatórios não foram informados");
         }
 
-        if (inscricaoId == null || inscricaoId.isBlank()) {
+        if (inscricaoId == null || inscricaoId.describeConstable().isEmpty()) {
             throw new IllegalArgumentException("O ID da Inscrição não foi informado");
         }
 
@@ -87,52 +101,50 @@ public class InscricaoService {
         return inscricao;
     }
 
-
-    public Inscricao aprovar(String inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
+    public Inscricao aprovar(Integer inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
 
         if (solicitante == null || !solicitante.isAtivo()) {
             throw new IllegalArgumentException("O Solicitante deve ser informado");
         }
 
-        if (inscricaoId == null || inscricaoId.isBlank()) {
+        if (inscricaoId == null) {
             throw new IllegalArgumentException("O ID da Inscrição não foi informado");
         }
 
-        boolean autor = solicitante.getId().equals(oportunidade.getAutor().getId());
-        boolean docenteResponsavel = solicitante.getId().equals(oportunidade.getDocenteResponsavelId());
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
-        if (!(autor || docenteResponsavel || solicitante.getPapel().equals(Papel.ADMIN))) {
-            throw new IllegalStateException("O Solicitante deve ser o responsável pela Oportunidade");
-        }
-
-        int aprovadas = 0;
-        for (Inscricao i : listarSlotsOcupados(oportunidade)) {
-            if (i.getStatus().equals(Status.APROVADA)) {
-                aprovadas++;
+        if (UsuarioService.hasPermissao(solicitante, coordenador) || UsuarioService.hasPermissao(solicitante, docente)) {
+            int aprovadas = 0;
+            for (Inscricao i : listarSlotsOcupados(oportunidade)) {
+                if (i.getStatus().equals(Status.APROVADO)) {
+                    aprovadas++;
+                }
             }
+
+            if (aprovadas >= oportunidade.getVagas()) {
+                throw new IllegalStateException("Vagas esgotadas");
+            }
+
+            Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
+
+            if (!inscricao.getStatus().equals(Status.PENDENTE)) {
+                throw new IllegalStateException("Só é possível aprovar inscrições PENDENTES");
+            }
+
+            inscricao.setStatus(Status.APROVADO);
+            return inscricaoRepo.save(inscricao);
         }
-
-        if (aprovadas >= oportunidade.getVagas()) {
-            throw new IllegalStateException("Vagas esgotadas");
-        }
-
-        Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
-
-        if (!inscricao.getStatus().equals(Status.PENDENTE)) {
-            throw new IllegalStateException("Só é possível aprovar inscrições PENDENTES");
-        }
-
-        inscricao.setStatus(Status.APROVADA);
-        return inscricaoRepo.save(inscricao);
+        throw new IllegalArgumentException("Sem perminssão para aprovar inscrições!");
     }
 
-    public Inscricao rejeitarRemoverDiscente(String inscricaoId, String justificativa, Oportunidade oportunidade, Usuario solicitante) {
+    public Inscricao rejeitarRemoverDiscente(Integer inscricaoId, String justificativa, Oportunidade oportunidade, Usuario solicitante) {
 
         if (solicitante == null || !solicitante.isAtivo()) {
             throw new IllegalArgumentException("O Solicitante deve ser informado");
         }
 
-        if (inscricaoId == null || inscricaoId.isBlank()) {
+        if (inscricaoId == null ) {
             throw new IllegalArgumentException("O ID da Inscrição não foi informado");
         }
 
@@ -140,38 +152,39 @@ public class InscricaoService {
             throw new IllegalArgumentException("A justificativa não foi informada");
         }
 
-        boolean autor = solicitante.getId().equals(oportunidade.getAutor().getId());
-        boolean docenteResponsavel = solicitante.getId().equals(oportunidade.getDocenteResponsavelId());
+        Papel docente = papelRepo.findByNome("DOCENTE");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
-        if (!(autor || docenteResponsavel || solicitante.getPapel().equals(Papel.ADMIN))) {
-            throw new IllegalStateException("O Solicitante deve ser o responsável pela Oportunidade");
+        if (UsuarioService.hasPermissao(solicitante, coordenador) || UsuarioService.hasPermissao(solicitante, docente)) {
+            Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
+
+            if (inscricao.getStatus().equals(Status.APROVADO)) {
+                inscricao.setStatus(Status.CANCELADO);
+            } else if (inscricao.getStatus().equals(Status.PENDENTE)) {
+                inscricao.setStatus(Status.REJEITADO);
+            } else {
+                throw new IllegalStateException("Só é possível rejeitar inscrições PENDENTES ou remover participantes APROVADOS");
+            }
+
+            inscricao.setJustificativaCancelamento(justificativa);
+            inscricaoRepo.save(inscricao);
+            promoverFilaEspera(oportunidade);
+            return inscricao;
         }
 
-        Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
 
-        if (inscricao.getStatus().equals(Status.APROVADA)) {
-            inscricao.setStatus(Status.CANCELADA);
-        } else if (inscricao.getStatus().equals(Status.PENDENTE)) {
-            inscricao.setStatus(Status.REJEITADA);
-        } else {
-            throw new IllegalStateException("Só é possível rejeitar inscrições PENDENTES ou remover participantes APROVADOS");
-        }
-
-        inscricao.setJustificativaCancelamento(justificativa);
-        inscricaoRepo.save(inscricao);
-        promoverFilaEspera(oportunidade);
-        return inscricao;
+        throw new IllegalStateException("O Solicitante deve ser o responsável pela Oportunidade");
     }
 
-    public Inscricao desistir(String inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
+    public Inscricao desistir(Integer inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
 
-        if (inscricaoId == null || inscricaoId.isBlank()) {
+        if (inscricaoId == null) {
             throw new IllegalArgumentException("O ID da Inscrição é inválido");
         }
 
         Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
 
-        if (inscricao.getStatus().equals(Status.REJEITADA) || inscricao.getStatus().equals(Status.CANCELADA)) {
+        if (inscricao.getStatus().equals(Status.REJEITADO) || inscricao.getStatus().equals(Status.CANCELADO)) {
             throw new IllegalStateException("A inscrição já está rejeitada ou cancelada");
         }
 
@@ -181,7 +194,7 @@ public class InscricaoService {
             throw new IllegalStateException("Apenas o próprio discente pode desistir");
         }
 
-        inscricao.setStatus(Status.CANCELADA);
+        inscricao.setStatus(Status.CANCELADO);
         inscricao.setJustificativaCancelamento("O Discente desistiu da vaga");
         inscricaoRepo.save(inscricao);
         promoverFilaEspera(oportunidade);
@@ -198,7 +211,7 @@ public class InscricaoService {
 
         if (!espera.isEmpty()) {
             Inscricao primeiro = espera.get(0);
-            primeiro.setStatus(StatusInscricao.PENDENTE);
+            primeiro.setStatus(Status.PENDENTE);
             inscricaoRepo.save(primeiro);
         }
     }
@@ -217,7 +230,7 @@ public class InscricaoService {
             throw new IllegalArgumentException("Oportunidade é obrigatória");
         }
 
-        List<Inscricao> fila = inscricaoRepo.findByOportunidadeAndStatus(oportunidade, Status.LISTA_DE_ESPERA);
+        List<Inscricao> fila = inscricaoRepo.findByOportunidadeAndStatus(oportunidade, Status.ESPERA);
 
         fila.sort(Comparator.comparing(Inscricao::getDataInscricao));
 
