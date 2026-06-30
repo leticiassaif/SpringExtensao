@@ -14,21 +14,21 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static br.ufma.springextensao.util.Sessao.logado;
+
 @RestController
 @RequestMapping("/api/curso")
 public class CursoController {
     @Autowired
     private CursoService cursoService;
     @Autowired
+
     private UsuarioService usuarioService;
 
     @PostMapping("/cadastrar")
     @ResponseStatus(HttpStatus.CREATED)
     public Curso cadastrarCurso(@RequestBody CursoDTO curso, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return cursoService.cadastrarCurso(solicitante, curso);
     }
 
@@ -55,10 +55,7 @@ public class CursoController {
     @PostMapping("/uce/cadastrar")
     @ResponseStatus(HttpStatus.CREATED)
     public UCE cadastrarUCE(@RequestBody UCEDTO uce, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return cursoService.cadastrarUCE(solicitante, uce);
     }
 
