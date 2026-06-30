@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
@@ -293,7 +294,7 @@ public class UsuarioService {
         if (usuario == null) {
             throw new IllegalArgumentException("Usuário inválido.");
         }
-        return usuario.getCargos().contains(papel);
+        return usuario.getCargos().stream().anyMatch(p -> p.getId().equals(papel.getId()));
     }
 
     public PainelHorasDTO painelHorasDTO(Integer id) {
