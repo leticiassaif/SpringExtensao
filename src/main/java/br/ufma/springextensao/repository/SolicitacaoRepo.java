@@ -13,4 +13,5 @@ public interface SolicitacaoRepo
         extends JpaRepository<Solicitacao, Integer> {
     List<Solicitacao> findByStatus(Status status);
     List<Solicitacao> findByDiscente(Discente discente);
+    List<Solicitacao> findByDiscenteAndStatus(Discente discente, Status status);
 }

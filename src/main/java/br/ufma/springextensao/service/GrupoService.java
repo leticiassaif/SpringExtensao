@@ -106,7 +106,7 @@ public class GrupoService {
 
         grupo.setStatus(Status.APROVADO);
 
-        adicionarMembro(solicitante, discente.getId(), grupo.getId());
+        adicionarMembro(solicitante, grupo.getId(), discente.getId());
         atribuirCargo(solicitante, discente.getId(), grupo.getId(), "DIRETOR");
 
         return grupoRepo.save(grupo);
@@ -297,7 +297,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Grupo não existe.");
         }
 
-        if (!solicitante.equals(grupo.getResponsavel())) {
+        if (!permissaoGrupo(grupo, solicitante)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
@@ -364,7 +364,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Grupo não existe.");
         }
 
-        if (!solicitante.equals(grupo.getResponsavel())) {
+        if (!permissaoGrupo(grupo, solicitante)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
@@ -514,9 +514,11 @@ public class GrupoService {
      **/
     private boolean permissaoGrupo(Grupo grupo, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
         Papel diretor = papelRepo.findByNome("DIRETOR");
 
         boolean isSolicitanteAdmin = hasPermissao(solicitante, admin);
+        boolean isSolicitanteCoordenador = hasPermissao(solicitante, coordenador);
         boolean isSolicitanteResponsavel = grupo.getResponsavel().equals(solicitante);
         boolean isSolicitanteDiretoria = false;
 
@@ -526,6 +528,6 @@ public class GrupoService {
                             gm.getDataFim() == null && gm.getDiscente().equals(discente));
         }
 
-        return isSolicitanteDiretoria || isSolicitanteResponsavel || isSolicitanteAdmin;
+        return isSolicitanteDiretoria || isSolicitanteResponsavel || isSolicitanteAdmin || isSolicitanteCoordenador;
     }
 }

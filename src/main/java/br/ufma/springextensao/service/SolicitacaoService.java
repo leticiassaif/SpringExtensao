@@ -8,6 +8,7 @@ import br.ufma.springextensao.model.Solicitacao;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.SolicitacaoRepo;
+import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,8 @@ public class SolicitacaoService {
 
     @Autowired
     PapelRepo papelRepo;
+    @Autowired
+    private UsuarioRepo usuarioRepo;
 
     /**
      * Essa função cria uma nova solicitação
@@ -46,11 +49,24 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
+        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDataSolicitacao().isBlank()) {
+            throw new IllegalArgumentException("Data de solicitação inválida.");
+        }
+
+        LocalDate dataSolicitacao;
+        try {
+            dataSolicitacao = LocalDate.parse(solicitacao.getDataSolicitacao());
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Data de solicitação inválida.");
+        }
+
         solicitacaoNovo = Solicitacao.builder().
                 descricao(solicitacao.getDescricao()).
                 discente(discente).
                 cargaHorario(solicitacao.getCargaHoraria()).
-                dataSolicitacao(LocalDate.parse(solicitacao.getDataSolicitacao())).
+                dataSolicitacao(dataSolicitacao).
+                dataAtual(LocalDate.now()).
+                status(Status.PENDENTE).
                 build();
 
         return solicitacaoRepo.save(solicitacaoNovo);
@@ -82,8 +98,14 @@ public class SolicitacaoService {
 
         solicitacao.setStatus(Status.APROVADO);
         solicitacao.setDataAtual(LocalDate.now());
+
+        if (solicitacao.getCargaHorario() == null || solicitacao.getCargaHorario() < 0) {
+            throw new IllegalArgumentException("Carga horária da solicitação inválida.");
+        }
+
         Discente discente = solicitacao.getDiscente();
-        discente.setCargaHoraria(discente.getCargaHoraria() + solicitacao.getCargaHorario());
+        Integer cargaAtual = discente.getCargaHoraria() != null ? discente.getCargaHoraria() : 0;
+        discente.setCargaHoraria(cargaAtual + solicitacao.getCargaHorario());
 
         solicitacaoRepo.save(solicitacao);
     }
@@ -97,7 +119,7 @@ public class SolicitacaoService {
      **/
     @Transactional
     public Solicitacao indeferir(Usuario solicitante, Integer id, String parecer) {
-        if (parecer == null) {
+        if (parecer == null || parecer.isBlank()) {
             throw new IllegalArgumentException("Parecer inválido.");
         }
 
@@ -118,9 +140,12 @@ public class SolicitacaoService {
             throw new IllegalStateException("Solicitação não está pendente");
         }
 
+        LocalDate hoje = LocalDate.now();
+
         solicitacao.setStatus(Status.INDEFERIDO);
+        solicitacao.setDataAtual(hoje);
         solicitacao.setParecer(parecer);
-        // verificar como seria o período de 5 dias
+        solicitacao.setPrazoReenvio(hoje.plusDays(5));
 
         return solicitacaoRepo.save(solicitacao);
     }
@@ -142,8 +167,23 @@ public class SolicitacaoService {
             throw new IllegalStateException("Solicitação não foi indeferida.");
         }
 
-        solicitacao.setStatus(Status.PENDENTE);
-        solicitacao.setParecer(null);
+        if (solicitacao.getPrazoReenvio() == null) {
+            throw new IllegalStateException("Solicitação não possui prazo de reenvio definido.");
+        }
+
+        LocalDate hoje = LocalDate.now();
+
+        if (solicitacao.getPrazoReenvio().isBefore(hoje)) {
+            solicitacao.setStatus(Status.CANCELADO);
+            solicitacao.setParecer("O Aluno não fez o reenvio a tempo");
+        } else {
+            solicitacao.setStatus(Status.PENDENTE);
+            solicitacao.setParecer(null);
+        }
+
+        solicitacao.setPrazoReenvio(null);
+        solicitacao.setDataAtual(hoje);
+
         // verificar como seria o período de 10 dias
 
         return solicitacaoRepo.save(solicitacao);
@@ -178,6 +218,22 @@ public class SolicitacaoService {
         }
 
         return solicitacaoRepo.findByDiscente(discente);
+    }
+
+    /**
+     * Essa função retorna as Solicitações indeferidas do usuario
+     * @param id
+     * @return
+     */
+    public List<Solicitacao> listarIndeferidos(Integer id) {
+        Usuario usuario = usuarioService.buscarPorId(id);
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário nã existe");
+        }
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+        return solicitacaoRepo.findByDiscenteAndStatus(discente, Status.INDEFERIDO);
     }
 
     /**
