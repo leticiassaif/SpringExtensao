@@ -63,6 +63,11 @@ public class SolicitacaoController {
         return solicitacaoService.listarPorDiscente(id);
     }
 
+    @GetMapping("/indeferidos/{id}")
+    public List<Solicitacao> listarIndeferidos(@PathVariable Integer id) {
+        return solicitacaoService.listarIndeferidos(id);
+    }
+
     @GetMapping("/pendentes")
     public List<Solicitacao> listarPendentes() {
         return solicitacaoService.listarPendentes();

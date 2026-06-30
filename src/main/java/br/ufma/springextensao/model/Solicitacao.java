@@ -32,6 +32,9 @@ public class Solicitacao {
     @Column(name = "data_atual")
     private LocalDate dataAtual;
 
+    @Column(name = "prazo_reenvio")
+    private LocalDate prazoReenvio;
+
     @Column(name = "parecer")
     private String parecer;
 
@@ -41,4 +44,8 @@ public class Solicitacao {
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Discente discente; // nao seria usuario?
+
+    public LocalDate getPrazoAnalise() {
+        return dataAtual.plusDays(10);
+    }
 }
