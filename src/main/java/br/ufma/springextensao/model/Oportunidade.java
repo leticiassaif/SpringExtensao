@@ -32,7 +32,7 @@ public class Oportunidade {
     private Integer cargaHoraria;
 
     @Column(name = "vagas")
-    private int vagas;
+    private Integer vagas;
 
     @Column(name = "data_inicio")
     private LocalDate dataInicio;
@@ -50,6 +50,9 @@ public class Oportunidade {
     @ManyToOne//(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_tipo")
     private Tipo tipo;
+
+    @OneToMany(mappedBy = "oportunidade")
+    private List<Inscricao> inscricoes;
 
     // discentes que participam da oportunidade
     @ManyToMany
