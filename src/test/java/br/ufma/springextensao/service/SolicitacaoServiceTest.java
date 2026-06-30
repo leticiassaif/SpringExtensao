@@ -206,6 +206,24 @@ class SolicitacaoServiceTest {
 
             assertThat(resultado.getStatus()).isEqualTo(Status.PENDENTE);
         }
+
+        @Test
+        void deveCriarSolicitacaoComCargaHorariaNulaNoDto() {
+            Discente discente = discente(0);
+            SolicitacaoDTO dto = SolicitacaoDTO.builder()
+                    .idDiscente(discente.getId())
+                    .dataSolicitacao(LocalDate.now().toString())
+                    .cargaHoraria(null)
+                    .build();
+
+            when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
+            when(solicitacaoRepo.save(any(Solicitacao.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Solicitacao resultado = solicitacaoService.submeter(dto);
+
+            // cargaHoraria null no DTO é armazenada sem quebrar; validação deve ocorrer em aprovar()
+            assertThat(resultado.getCargaHorario()).isNull();
+        }
     }
 
     // aprovar --------------------------------------------------------------
@@ -318,6 +336,45 @@ class SolicitacaoServiceTest {
 
             verify(solicitacaoRepo, never()).save(any());
         }
+
+        // BUG CONHECIDO: aprovar() seta status = APROVADO ANTES de validar cargaHorario;
+        // com carga negativa a exceção é lançada mas o objeto em memória já tem status
+        // APROVADO (estado inconsistente). Fica VERMELHO até a reordenação da validação.
+        @Test
+        void naoDeveAltararStatusEmMemoriaQuandoCargaNegativaEhRejeitada() {
+            Papel admin = papel("ADMIN");
+            Docente solicitanteAdmin = docente(admin);
+            Discente discente = discente(10);
+            Solicitacao solicitacao = solicitacao(Status.PENDENTE, discente, -5, null);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(papel("COORDENADOR"));
+            when(solicitacaoRepo.findById(solicitacao.getId())).thenReturn(Optional.of(solicitacao));
+
+            assertThatThrownBy(() -> solicitacaoService.aprovar(solicitanteAdmin, solicitacao.getId()))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // status não deve ter mudado — exceção ocorreu após setStatus(APROVADO), bug de ordem
+            assertThat(solicitacao.getStatus()).isEqualTo(Status.PENDENTE);
+        }
+
+        @Test
+        void deveAprovarComCargaHorariaZero() {
+            Papel admin = papel("ADMIN");
+            Docente solicitanteAdmin = docente(admin);
+            Discente discente = discente(10);
+            Solicitacao solicitacao = solicitacao(Status.PENDENTE, discente, 0, null);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(papel("COORDENADOR"));
+            when(solicitacaoRepo.findById(solicitacao.getId())).thenReturn(Optional.of(solicitacao));
+            when(solicitacaoRepo.save(any(Solicitacao.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            solicitacaoService.aprovar(solicitanteAdmin, solicitacao.getId());
+
+            assertThat(solicitacao.getStatus()).isEqualTo(Status.APROVADO);
+            assertThat(discente.getCargaHoraria()).isEqualTo(10); // 10 + 0
+        }
     }
 
     // indeferir --------------------------------------------------------------
@@ -373,6 +430,18 @@ class SolicitacaoServiceTest {
 
             assertThatThrownBy(() -> solicitacaoService.indeferir(admin, solicitacao.getId(), "motivo"))
                     .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoSolicitacaoNaoExiste() {
+            Papel admin = papel("ADMIN");
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(papel("COORDENADOR"));
+            when(solicitacaoRepo.findById(999)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> solicitacaoService.indeferir(docente(admin), 999, "motivo"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitação não existe");
         }
 
         // --- teste de quebra ---
@@ -480,6 +549,19 @@ class SolicitacaoServiceTest {
             Solicitacao resultado = solicitacaoService.reenviar(solicitacao.getId());
 
             assertThat(resultado.getStatus()).isEqualTo(Status.PENDENTE);
+        }
+
+        @Test
+        void deveLimparPrazoReenvioAoCancelar() {
+            Solicitacao solicitacao = solicitacao(Status.INDEFERIDO, discente(0), 5, LocalDate.now().minusDays(1));
+
+            when(solicitacaoRepo.findById(solicitacao.getId())).thenReturn(Optional.of(solicitacao));
+            when(solicitacaoRepo.save(any(Solicitacao.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Solicitacao resultado = solicitacaoService.reenviar(solicitacao.getId());
+
+            assertThat(resultado.getStatus()).isEqualTo(Status.CANCELADO);
+            assertThat(resultado.getPrazoReenvio()).isNull();
         }
     }
 

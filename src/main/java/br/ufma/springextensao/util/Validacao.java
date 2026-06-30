@@ -14,6 +14,9 @@ public class Validacao {
     }
 
     public static LocalDate formataDataIso(String data) {
+        if (data == null || data.isBlank()) {
+            throw new IllegalArgumentException("Data não pode ser nula ou em branco.");
+        }
         try {
             return LocalDate.parse(data, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException e) {

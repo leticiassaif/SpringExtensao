@@ -25,7 +25,7 @@ public class GrupoController {
     @PostMapping("/criar")
     @ResponseStatus(HttpStatus.CREATED)
     public Grupo criarGrupo(@RequestBody GrupoDTO grupo, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        Usuario solicitante = usuarioService.buscarPorId((Integer)session.getAttribute("IdUsuarioLogado"));
         if (solicitante == null) {
             throw new SecurityException("Usuário não está logado.");
         }

@@ -123,6 +123,22 @@ class UsuarioServiceTest {
 
             verify(usuarioRepo, never()).save(any());
         }
+
+        @Test
+        void deveLancarExcecaoQuandoIdCursoEhNulo() {
+            DiscenteDTO dto = new DiscenteDTO();
+            dto.setIdCurso(null);
+            dto.setSenha("senha123");
+
+            // mock retorna Optional.empty() para findById(null) por padrão
+            when(cursoRepo.findById(null)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> usuarioService.cadastrarDiscente(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Curso");
+
+            verify(usuarioRepo, never()).save(any());
+        }
     }
 
     // cadastrarDocente ----------------------------------------------------
@@ -272,6 +288,38 @@ class UsuarioServiceTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("não é docente");
         }
+
+        @Test
+        void deveLancarExcecaoDeCargoInvalidoQuandoCargoEhEmBranco() {
+            Papel admin = papel("ADMIN");
+            Docente solicitante = docenteComCargo(admin);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+
+            assertThatThrownBy(() -> usuarioService.promoverDocente(solicitante, "   ", 2))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Cargo inválido");
+        }
+
+        // BUG CONHECIDO: promoverDocente() não verifica se o docente já possui o cargo;
+        // getCargos().add(papel) cria duplicatas na lista. Fica VERMELHO até a correção.
+        @Test
+        void naoDeveDuplicarCargoSeDocenteJaPossui() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(admin);
+            Docente alvo = docenteComCargo(coordenador);
+            alvo.setId(3);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(3)).thenReturn(Optional.of(alvo));
+            when(usuarioRepo.save(any(Docente.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            usuarioService.promoverDocente(solicitante, "COORDENADOR", 3);
+
+            assertThat(alvo.getCargos()).containsOnlyOnce(coordenador);
+        }
     }
     // desativar -------------------------------------------------------------
 
@@ -370,6 +418,14 @@ class UsuarioServiceTest {
 
             verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
         }
+
+        @Test
+        void deveLancarExcecaoQuandoIdEhNulo() {
+            // buscarPorId(null) lança IAE "ID inválido." antes da verificação de permissão
+            assertThatThrownBy(() -> usuarioService.desativar(docenteComCargo(), null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ID inválido");
+        }
     }
 
     // anonimizar --------------------------------------------------------------
@@ -423,6 +479,23 @@ class UsuarioServiceTest {
             assertThatThrownBy(() -> usuarioService.anonimizar(solicitante, 999))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Usuário não existe");
+        }
+
+        @Test
+        void naoDeveRemoverDeGruposQuandoAlvoAnonimizadoEhDocente() {
+            Papel admin = papel("ADMIN");
+            Docente solicitante = docenteComCargo(admin);
+            Docente alvo = docenteComCargo();
+            alvo.setId(5);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(usuarioRepo.findById(5)).thenReturn(Optional.of(alvo));
+
+            usuarioService.anonimizar(solicitante, 5);
+
+            assertThat(alvo.isAtivo()).isFalse();
+            assertThat(alvo.getNome()).isEqualTo("Usuário Anonimizado");
+            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
         }
     }
 
