@@ -2,18 +2,23 @@ package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.SolicitacaoDTO;
 import br.ufma.springextensao.model.Solicitacao;
+import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.service.SolicitacaoService;
 import br.ufma.springextensao.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/solicitacao")
 public class SolicitacaoController {
+
     @Autowired
     SolicitacaoService solicitacaoService;
+    @Autowired
+    UsuarioService usuarioService;
 
     @PostMapping("/submeter")
     @ResponseStatus(HttpStatus.CREATED)
@@ -23,14 +28,23 @@ public class SolicitacaoController {
 
     @PatchMapping("/aprovar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Solicitacao aprovar(@PathVariable Integer id) {
-        return solicitacaoService.aprovar(, id);
+    public Solicitacao aprovar(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        solicitacaoService.aprovar(solicitante, id);
+        return solicitacaoService.buscarPorId(id);
     }
 
     @PatchMapping("/indeferir/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Solicitacao indeferir(@PathVariable Integer id, @RequestParam String parecer) {
-        return solicitacaoService.indeferir(, id, parecer);
+    public Solicitacao indeferir(@PathVariable Integer id, @RequestParam String parecer, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return solicitacaoService.indeferir(solicitante, id, parecer);
     }
 
     @PatchMapping("/reenviar/{id}")
