@@ -2,6 +2,7 @@ package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.controller.dtos.DiscenteDTO;
 import br.ufma.springextensao.controller.dtos.DocenteDTO;
+import br.ufma.springextensao.controller.dtos.PainelHorasDTO;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
@@ -294,4 +295,20 @@ public class UsuarioService {
         }
         return usuario.getCargos().contains(papel);
     }
+
+    public PainelHorasDTO painelHorasDTO(Integer id) {
+        Usuario usuario = buscarPorId(id);
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário nã existe");
+        }
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+        return PainelHorasDTO.builder()
+                            .cargaHorariaFeita(discente.getCargaHoraria())
+                            .cargaHorariaTotal(discente.getCurso().getCargaHoraria())
+                            .build();
+    }
+
+
 }

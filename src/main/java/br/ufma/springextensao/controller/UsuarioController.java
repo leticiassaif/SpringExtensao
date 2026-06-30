@@ -1,5 +1,6 @@
 package br.ufma.springextensao.controller;
 
+import br.ufma.springextensao.controller.dtos.PainelHorasDTO;
 import jakarta.servlet.http.HttpSession;
 import br.ufma.springextensao.controller.dtos.DiscenteDTO;
 import br.ufma.springextensao.controller.dtos.DocenteDTO;
@@ -89,5 +90,10 @@ public class UsuarioController {
     @GetMapping("/id/{id}")
     public Usuario bucaId(@PathVariable Integer id) {
         return usuarioService.buscarPorId(id);
+    }
+
+    @GetMapping("/painel/{id}")
+    public PainelHorasDTO painelHorasDTO(@PathVariable Integer id) {
+        return usuarioService.painelHorasDTO(id);
     }
 }
