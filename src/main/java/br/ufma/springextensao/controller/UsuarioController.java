@@ -51,20 +51,34 @@ public class UsuarioController {
 
     @PatchMapping("/promover/docente/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Docente promoverDocente(@PathVariable Integer id, @RequestParam String cargo) {
-        return usuarioService.promoverDocente(, cargo, id);
+    public Docente promoverDocente(@PathVariable Integer id, @RequestParam String cargo, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return usuarioService.promoverDocente(solicitante, cargo, id);
     }
 
     @PatchMapping("/desativar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Usuario desativar(@PathVariable Integer id) {
-        return usuarioService.desativar(, id);
+    public Usuario desativar(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        usuarioService.desativar(solicitante, id);
+        return usuarioService.buscarPorId(id);
     }
 
     @PatchMapping("/anonimizar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Usuario anonimizar(@PathVariable Integer id) {
-        return usuarioService.anonimizar(, id);
+    public Usuario anonimizar(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        usuarioService.anonimizar(solicitante, id);
+        return usuarioService.buscarPorId(id);
     }
 
     @GetMapping("/email/{email}")
