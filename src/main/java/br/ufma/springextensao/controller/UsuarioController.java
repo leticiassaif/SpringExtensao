@@ -9,10 +9,11 @@ import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Docente;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.service.UsuarioService;
-import jakarta.validation.constraints.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import static br.ufma.springextensao.util.Sessao.logado;
 
 @RestController
 @RequestMapping("/api/usuario")
@@ -43,30 +44,21 @@ public class UsuarioController {
     @PostMapping("/cadastrar/docente")
     @ResponseStatus(HttpStatus.CREATED)
     public Docente cadastrarDocente(@RequestBody DocenteDTO docente, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return usuarioService.cadastrarDocente(solicitante, docente);
     }
 
     @PatchMapping("/promover/docente/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Docente promoverDocente(@PathVariable Integer id, @RequestParam String cargo, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return usuarioService.promoverDocente(solicitante, cargo, id);
     }
 
     @PatchMapping("/desativar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Usuario desativar(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         usuarioService.desativar(solicitante, id);
         return usuarioService.buscarPorId(id);
     }
@@ -74,10 +66,7 @@ public class UsuarioController {
     @PatchMapping("/anonimizar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Usuario anonimizar(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         usuarioService.anonimizar(solicitante, id);
         return usuarioService.buscarPorId(id);
     }
