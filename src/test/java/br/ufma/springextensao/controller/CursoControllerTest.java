@@ -160,43 +160,42 @@ class CursoControllerTest {
         }
 
         @Test
-        void deveLancarSecurityExceptionQuandoUsuarioNaoEstaLogado() {
+        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
             when(session.getAttribute("IdUsuarioLogado")).thenReturn(7);
             when(usuarioService.buscarPorId(7)).thenReturn(null);
             CursoDTO dto = cursoDTO("CC", "PPC", 3200, "2020-01-01", "2025-01-01");
 
             assertThatThrownBy(() -> cursoController.cadastrarCurso(dto, session))
-                    .isInstanceOf(SecurityException.class)
-                    .hasMessageContaining("Usuário não está logado.");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitante não foi encontrado.");
 
             verify(cursoService, never()).cadastrarCurso(any(), any());
         }
 
         @Test
-        void deveLancarSecurityExceptionQuandoSessaoNaoTemAtributo() {
-            // session.getAttribute(...) retorna null por padrão (não foi stubado).
-            when(usuarioService.buscarPorId(null)).thenReturn(null);
+        void deveLancarExcecaoQuandoSessaoNaoTemAtributo() {
+            // session.getAttribute(...) retorna null por padrão (não foi stubado) —
+            // ou seja, não há id válido, então cai no caso de "não logado".
             CursoDTO dto = cursoDTO("CC", "PPC", 3200, "2020-01-01", "2025-01-01");
 
             assertThatThrownBy(() -> cursoController.cadastrarCurso(dto, session))
-                    .isInstanceOf(SecurityException.class);
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
 
             verify(cursoService, never()).cadastrarCurso(any(), any());
         }
 
-        // BUG CONHECIDO: cadastrarCurso() faz `(Integer) session.getAttribute(...)` sem
-        // tratamento. Se o atributo de sessão estiver corrompido/com tipo inválido
-        // (ex.: uma String em vez de Integer), o cast lança ClassCastException, que
-        // vaza como erro 500 não controlado em vez de ser tratado como "não logado"
-        // (SecurityException). Fica VERMELHO até o controller validar/capturar o cast.
         @Test
-        void deveLancarExcecaoControladaQuandoAtributoDeSessaoTemTipoInvalido() {
+        void deveLancarExcecaoQuandoAtributoDeSessaoTemTipoInvalido() {
+            // Atributo de sessão corrompido/com tipo inválido (ex.: String em vez de
+            // Integer) também não é um id válido, então cai no mesmo caso de "não logado".
             when(session.getAttribute("IdUsuarioLogado")).thenReturn("nao-e-um-id");
             CursoDTO dto = cursoDTO("CC", "PPC", 3200, "2020-01-01", "2025-01-01");
 
             assertThatThrownBy(() -> cursoController.cadastrarCurso(dto, session))
                     .isInstanceOf(SecurityException.class)
-                    .isNotInstanceOf(ClassCastException.class);
+                    .isNotInstanceOf(ClassCastException.class)
+                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
         }
 
         @Test
@@ -393,40 +392,40 @@ class CursoControllerTest {
         }
 
         @Test
-        void deveLancarSecurityExceptionQuandoUsuarioNaoEstaLogado() {
+        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
             when(session.getAttribute("IdUsuarioLogado")).thenReturn(9);
             when(usuarioService.buscarPorId(9)).thenReturn(null);
             UCEDTO dto = uceDTO("Cálculo I", 60, 1);
 
             assertThatThrownBy(() -> cursoController.cadastrarUCE(dto, session))
-                    .isInstanceOf(SecurityException.class)
-                    .hasMessageContaining("Usuário não está logado.");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitante não foi encontrado.");
 
             verify(cursoService, never()).cadastrarUCE(any(), any());
         }
 
         @Test
-        void deveLancarSecurityExceptionQuandoSessaoNaoTemAtributo() {
-            when(usuarioService.buscarPorId(null)).thenReturn(null);
+        void deveLancarExcecaoQuandoSessaoNaoTemAtributo() {
             UCEDTO dto = uceDTO("Cálculo I", 60, 1);
 
             assertThatThrownBy(() -> cursoController.cadastrarUCE(dto, session))
-                    .isInstanceOf(SecurityException.class);
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
 
             verify(cursoService, never()).cadastrarUCE(any(), any());
         }
 
-        // BUG CONHECIDO: mesmo problema de cadastrarCurso() — cast não controlado de
-        // session.getAttribute(...) para Integer. Fica VERMELHO até o controller
-        // validar/capturar o cast e tratar como "não logado".
         @Test
-        void deveLancarExcecaoControladaQuandoAtributoDeSessaoTemTipoInvalido() {
+        void deveLancarExcecaoQuandoAtributoDeSessaoTemTipoInvalido() {
+            // Atributo de sessão corrompido/com tipo inválido também cai no caso de
+            // "não logado", tratado de forma controlada (não vaza ClassCastException).
             when(session.getAttribute("IdUsuarioLogado")).thenReturn("nao-e-um-id");
             UCEDTO dto = uceDTO("Cálculo I", 60, 1);
 
             assertThatThrownBy(() -> cursoController.cadastrarUCE(dto, session))
                     .isInstanceOf(SecurityException.class)
-                    .isNotInstanceOf(ClassCastException.class);
+                    .isNotInstanceOf(ClassCastException.class)
+                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
         }
 
         @Test
