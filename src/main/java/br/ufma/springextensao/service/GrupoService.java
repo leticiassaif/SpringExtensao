@@ -106,7 +106,7 @@ public class GrupoService {
 
         grupo.setStatus(Status.APROVADO);
 
-        adicionarMembro(solicitante, discente.getId(), grupo.getId());
+        adicionarMembro(solicitante, grupo.getId(), discente.getId());
         atribuirCargo(solicitante, discente.getId(), grupo.getId(), "DIRETOR");
 
         return grupoRepo.save(grupo);
