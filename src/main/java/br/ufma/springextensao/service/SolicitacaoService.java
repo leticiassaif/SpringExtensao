@@ -96,12 +96,12 @@ public class SolicitacaoService {
             throw new IllegalStateException("Solicitação não está pendente");
         }
 
-        solicitacao.setStatus(Status.APROVADO);
-        solicitacao.setDataAtual(LocalDate.now());
-
         if (solicitacao.getCargaHorario() == null || solicitacao.getCargaHorario() < 0) {
             throw new IllegalArgumentException("Carga horária da solicitação inválida.");
         }
+
+        solicitacao.setStatus(Status.APROVADO);
+        solicitacao.setDataAtual(LocalDate.now());
 
         Discente discente = solicitacao.getDiscente();
         Integer cargaAtual = discente.getCargaHoraria() != null ? discente.getCargaHoraria() : 0;

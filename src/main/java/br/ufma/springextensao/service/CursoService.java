@@ -47,6 +47,14 @@ public class CursoService {
             throw new SecurityException("O solicitante não possui permissão para criar curso/ppc.");
         }
 
+        if (curso == null) {
+            throw new IllegalArgumentException("Dados do curso inválidos.");
+        }
+
+        if (curso.getCargaHoraria() == null || curso.getCargaHoraria() <= 0) {
+            throw new IllegalArgumentException("Carga horária deve ser positiva.");
+        }
+
         Curso c = Curso.builder().
                 nome("Ciência da Computação").
                 codigo(curso.getCodigo()).
@@ -81,12 +89,20 @@ public class CursoService {
             throw new SecurityException("O solicitante não possui permissão para criar curso/ppc.");
         }
 
+        if (curso == null) {
+            throw new IllegalArgumentException("Dados do curso inválidos.");
+        }
+
         LocalDate inicio = formataDataIso(curso.getDataInicio());
         LocalDate fim = formataDataIso(curso.getDataFim());
 
         Curso c = Curso.builder().
+                nome("Ciência da Computação").
                 codigo(curso.getCodigo()).
                 curriculo(curso.getCurriculo()).
+                cargaHoraria(curso.getCargaHoraria()).
+                uces(new ArrayList<>()).
+                discentes(new ArrayList<>()).
                 build();
 
 
@@ -102,7 +118,7 @@ public class CursoService {
      * @return curso/ppc procurado, nulo caso não exista
      **/
     public Curso buscarPorVersao(String versao) {
-        if (versao == null) {
+        if (versao == null || versao.isBlank()) {
             throw new IllegalArgumentException("Versão inválida");
         }
         return cursoRepo.findByVersao(versao).orElse(null);
@@ -153,6 +169,14 @@ public class CursoService {
 
         if (curso == null) {
             throw new IllegalArgumentException("Curso não existe");
+        }
+
+        if (uce.getNome() == null || uce.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome da UCE inválido.");
+        }
+
+        if (uce.getCargaHoraria() == null || uce.getCargaHoraria() <= 0) {
+            throw new IllegalArgumentException("Carga horária da UCE deve ser positiva.");
         }
 
         UCE u = UCE.builder().

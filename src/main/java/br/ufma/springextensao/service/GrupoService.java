@@ -43,6 +43,10 @@ public class GrupoService {
     // automaticamente aprovar se for chamado por um docente
     @Transactional
     public Grupo criar(GrupoDTO grupo, Usuario solicitante) {
+        if (grupo == null) {
+            throw new IllegalArgumentException("Dados do grupo inválidos.");
+        }
+
         Grupo grupoNovo;
         Usuario usuarioDoc = usuarioService.buscarPorId(grupo.getIdResponsavel());
 
@@ -425,10 +429,12 @@ public class GrupoService {
 
         membros.forEach(membro -> membro.setDataFim(LocalDate.now()));
         discente.getGrupos().forEach(grupo -> grupo.getMembros().remove(discente));
+
+        List<Grupo> gruposParaSalvar = new ArrayList<>(discente.getGrupos());
         discente.getGrupos().clear();
 
         grupoMembroRepo.saveAll(membros);
-        grupoRepo.saveAll(discente.getGrupos());
+        grupoRepo.saveAll(gruposParaSalvar);
         usuarioRepo.save(discente);
     }
 
