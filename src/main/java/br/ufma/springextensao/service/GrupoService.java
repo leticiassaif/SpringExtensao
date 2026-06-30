@@ -326,7 +326,8 @@ public class GrupoService {
                 dataInicio(LocalDate.now()).
                 build();
 
-        if (!discente.getCargos().contains(papel)) {
+        boolean hasPapel = discente.getCargos().stream().anyMatch(p -> p.getId().equals(papel.getId()));
+        if (!hasPapel) {
             discente.getCargos().add(papel);
         }
 
@@ -460,7 +461,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Discente não existe.");
         }
 
-        return discente.getGrupos().contains(grupo);
+        return discente.getGrupos().stream().anyMatch(g -> g.getId().equals(grupo.getId()));
     }
 
     //public Discente buscarMembroPorCargo() {}

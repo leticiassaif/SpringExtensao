@@ -221,9 +221,9 @@ public class SolicitacaoService {
     }
 
     /**
-     * Essa função retorna as Solicitações indeferidas do usuario
-     * @param id
-     * @return
+     * Essa função retorna as Solicitações indeferidas do discente
+     * @param id id do discente
+     * @return lista com as solicitações indeferidas
      */
     public List<Solicitacao> listarIndeferidos(Integer id) {
         Usuario usuario = usuarioService.buscarPorId(id);
