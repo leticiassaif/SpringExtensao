@@ -14,6 +14,7 @@ import br.ufma.springextensao.service.UsuarioService;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/usuario")
 public class GrupoController {
     @Autowired
     GrupoService grupoService;
