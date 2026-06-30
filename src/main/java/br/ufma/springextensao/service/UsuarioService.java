@@ -116,7 +116,7 @@ public class UsuarioService {
             throw new IllegalArgumentException("ID inválido.");
         }
 
-        if (cargo == null) {
+        if (cargo == null || cargo.isBlank()) {
             throw new IllegalArgumentException("Cargo inválido.");
         }
 
@@ -137,7 +137,9 @@ public class UsuarioService {
             throw new IllegalArgumentException("Usuário não é docente.");
         }
 
-        docente.getCargos().add(papel);
+        if (!docente.getCargos().contains(papel)) {
+            docente.getCargos().add(papel);
+        }
 
         return usuarioRepo.save(docente);
     }

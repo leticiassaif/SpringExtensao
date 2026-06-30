@@ -23,6 +23,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.mockito.ArgumentCaptor;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -151,6 +153,28 @@ class GrupoServiceTest {
                     .hasMessageContaining("não é docente");
 
             verify(grupoRepo, never()).save(any());
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoIdResponsavelEhNulo() {
+            GrupoDTO dto = new GrupoDTO();
+            // idResponsavel fica null por padrão — usuarioService.buscarPorId(null) no mock retorna null
+
+            assertThatThrownBy(() -> grupoService.criar(dto, null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("não existe");
+
+            verify(grupoRepo, never()).save(any());
+        }
+
+        // BUG CONHECIDO: criar() com DTO null lança NullPointerException ao acessar
+        // grupo.getIdResponsavel() sem validação prévia. O esperado é IllegalArgumentException.
+        // Fica VERMELHO até a correção.
+        @Test
+        void deveLancarExcecaoControladaQuandoDtoEhNulo() {
+            assertThatThrownBy(() -> grupoService.criar(null, docente()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .isNotInstanceOf(NullPointerException.class);
         }
     }
 
@@ -307,6 +331,27 @@ class GrupoServiceTest {
                     .isInstanceOf(SecurityException.class);
 
             verify(grupoRepo, never()).save(any());
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoDiretorIndicadoEstaInativo() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Papel diretor = papel("DIRETOR");
+            Papel membro = papel("MEMBRO");
+            stubPapeisComuns(admin, coordenador, diretor, membro);
+
+            Docente responsavel = docente();
+            Grupo grupo = grupo(Status.PENDENTE, responsavel);
+            Discente futuroDiretor = discente();
+            futuroDiretor.setAtivo(false);
+
+            when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
+            when(usuarioService.buscarPorId(futuroDiretor.getId())).thenReturn(futuroDiretor);
+
+            assertThatThrownBy(() -> grupoService.aprovar(responsavel, grupo.getId(), futuroDiretor.getId()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ativo");
         }
     }
 
@@ -600,6 +645,23 @@ class GrupoServiceTest {
             assertThatThrownBy(() -> grupoService.adicionarMembro(responsavel, grupo.getId(), inativo.getId()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("ativo");
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoIdGrupoEhNulo() {
+            Discente novoMembro = discente();
+            when(usuarioService.buscarPorId(novoMembro.getId())).thenReturn(novoMembro);
+
+            // buscaPorId(null) no service real lança IAE antes de chegar no repo
+            assertThatThrownBy(() -> grupoService.adicionarMembro(docente(), null, novoMembro.getId()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoIdDiscenteEhNulo() {
+            // usuarioService.buscarPorId(null) no mock retorna null → "Usuário não existe."
+            assertThatThrownBy(() -> grupoService.adicionarMembro(docente(), 1, null))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -1262,6 +1324,50 @@ class GrupoServiceTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("não é discente");
         }
+
+        @Test
+        void deveIgnorarDiscenteSemGrupos() {
+            Discente discente = discente();
+            // grupos já é ArrayList vazia pelo helper
+
+            when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
+            when(grupoMembroRepo.findByDiscente(discente)).thenReturn(List.of());
+
+            grupoService.removerDiscenteTodosGrupos(docente(), discente.getId());
+
+            verify(usuarioRepo).save(discente);
+            verify(grupoRepo).saveAll(any());
+        }
+
+        // BUG CONHECIDO: removerDiscenteTodosGrupos() chama grupoRepo.saveAll(discente.getGrupos())
+        // APÓS discente.getGrupos().clear(), portanto persiste lista vazia. As remoções nos grupos
+        // nunca chegam ao banco. Fica VERMELHO até a correção.
+        @Test
+        void deveAtualizarGruposNoRepositorioAoRemoverDiscente() {
+            Discente discente = discente();
+            Grupo grupoA = grupo(Status.APROVADO, docente());
+            Grupo grupoB = grupo(Status.APROVADO, docente());
+            discente.getGrupos().add(grupoA);
+            discente.getGrupos().add(grupoB);
+            grupoA.getMembros().add(discente);
+            grupoB.getMembros().add(discente);
+
+            GrupoMembro vinculoA = GrupoMembro.builder().grupo(grupoA).discente(discente).build();
+            GrupoMembro vinculoB = GrupoMembro.builder().grupo(grupoB).discente(discente).build();
+
+            when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
+            when(grupoMembroRepo.findByDiscente(discente)).thenReturn(List.of(vinculoA, vinculoB));
+
+            grupoService.removerDiscenteTodosGrupos(docente(), discente.getId());
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Iterable<Grupo>> captor = ArgumentCaptor.forClass((Class) Iterable.class);
+            verify(grupoRepo).saveAll(captor.capture());
+
+            List<Grupo> salvos = new ArrayList<>();
+            captor.getValue().forEach(salvos::add);
+            assertThat(salvos).containsExactlyInAnyOrder(grupoA, grupoB);
+        }
     }
 
     // buscaPorId --------------------------------------------------------------
@@ -1366,6 +1472,38 @@ class GrupoServiceTest {
             List<Discente> resultado = grupoService.listaGrupoMembrosNaoAtivos(grupo.getId());
 
             assertThat(resultado).containsExactly(inativo);
+        }
+
+        @Test
+        void deveLancarExcecaoAoListarMembrosDeGrupoComIdNulo() {
+            assertThatThrownBy(() -> grupoService.listaGrupoMembros(null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ID inválido");
+
+            verifyNoInteractions(grupoRepo);
+        }
+
+        @Test
+        void deveRetornarListaVaziaParaMembrosAtivosDeGrupoSemMembros() {
+            Grupo grupo = grupo(Status.APROVADO, docente());
+            // membros já é ArrayList vazia pelo helper
+
+            when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
+
+            List<Discente> resultado = grupoService.listaGrupoMembrosAtivos(grupo.getId());
+
+            assertThat(resultado).isEmpty();
+        }
+
+        @Test
+        void deveRetornarListaVaziaParaMembrosNaoAtivosDeGrupoSemMembros() {
+            Grupo grupo = grupo(Status.APROVADO, docente());
+
+            when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
+
+            List<Discente> resultado = grupoService.listaGrupoMembrosNaoAtivos(grupo.getId());
+
+            assertThat(resultado).isEmpty();
         }
     }
 }
