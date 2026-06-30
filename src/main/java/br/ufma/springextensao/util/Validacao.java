@@ -10,7 +10,7 @@ public class Validacao {
             Pattern.compile("^[\\w.+-]+@[\\w-]+\\.[\\w.]{2,}$");
 
     public static boolean isEmailValido(String email) {
-        return email != null && EMAIL_PATTERN.matcher(email).matches();
+        return email != null  && !email.isBlank() && EMAIL_PATTERN.matcher(email).matches();
     }
 
     public static LocalDate formataDataIso(String data) {

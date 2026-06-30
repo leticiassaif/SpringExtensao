@@ -6,7 +6,7 @@ import lombok.Data;
 public class CursoDTO {
     String codigo;
     String curriculo;
-
+    Integer cargaHoraria;
     String dataInicio;
     String dataFim;
 }

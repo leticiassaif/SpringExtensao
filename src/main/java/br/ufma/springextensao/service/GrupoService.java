@@ -45,18 +45,13 @@ public class GrupoService {
     public Grupo criar(GrupoDTO grupo, Usuario solicitante) {
         Grupo grupoNovo;
         Usuario usuarioDoc = usuarioService.buscarPorId(grupo.getIdResponsavel());
-        Usuario usuarioDir = usuarioService.buscarPorId(grupo.getIdDiretor());
 
-        if (usuarioDoc == null || usuarioDir == null) {
+        if (usuarioDoc == null) {
             throw new IllegalArgumentException("Usuário(s) não existe.");
         }
 
         if (!(usuarioDoc instanceof Docente docente)) {
             throw new IllegalArgumentException("Usuário não é docente.");
-        }
-
-        if (!(usuarioDir instanceof Discente diretor)) {
-            throw new IllegalArgumentException("Usuário não é discente.");
         }
 
         grupoNovo = Grupo.builder().
@@ -66,6 +61,7 @@ public class GrupoService {
                 //curso(curso).
                 responsavel(docente).
                 membros(new ArrayList<>()).
+                membrosHistorico(new ArrayList<>()).
                 status(Status.PENDENTE).
                 build();
 
@@ -110,7 +106,7 @@ public class GrupoService {
 
         grupo.setStatus(Status.APROVADO);
 
-        adicionarMembro(solicitante, discente.getId(), grupo.getId());
+        adicionarMembro(solicitante, grupo.getId(), discente.getId());
         atribuirCargo(solicitante, discente.getId(), grupo.getId(), "DIRETOR");
 
         return grupoRepo.save(grupo);
@@ -122,6 +118,7 @@ public class GrupoService {
      * @param id id do grupo que se deseja rejeitar
      * @return grupo persistido no banco
      **/
+    @Transactional
     public Grupo rejeitar(Usuario solicitante, Integer id, String justificativa) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
@@ -300,7 +297,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Grupo não existe.");
         }
 
-        if (!solicitante.equals(grupo.getResponsavel())) {
+        if (!permissaoGrupo(grupo, solicitante)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
@@ -367,7 +364,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Grupo não existe.");
         }
 
-        if (!solicitante.equals(grupo.getResponsavel())) {
+        if (!permissaoGrupo(grupo, solicitante)) {
             throw new SecurityException("Usuário não possui permissão.");
         }
 
@@ -481,7 +478,7 @@ public class GrupoService {
      * @param id id do grupo desejado
      * @return lista com todos os discentes do grupo
      **/
-    public List<Usuario> listaGrupoMembros(Integer id) {
+    public List<Discente> listaGrupoMembros(Integer id) {
         Grupo grupo = buscaPorId(id);
 
         if (grupo == null) {
@@ -496,7 +493,7 @@ public class GrupoService {
      * @param id id do grupo desejado
      * @return lista com todos os discentes ativos do grupo
      **/
-    public List<Usuario> listaGrupoMembrosAtivos(Integer id) {
+    public List<Discente> listaGrupoMembrosAtivos(Integer id) {
         return listaGrupoMembros(id).stream().filter(Usuario::isAtivo).toList();
     }
 
@@ -505,7 +502,7 @@ public class GrupoService {
      * @param id id do grupo desejado
      * @return lista com todos os discentes não ativos do grupo
      **/
-    public List<Usuario> listaGrupoMembrosNaoAtivos(Integer id) {
+    public List<Discente> listaGrupoMembrosNaoAtivos(Integer id) {
         return listaGrupoMembros(id).stream().filter(u -> !u.isAtivo()).toList();
     }
 
@@ -517,9 +514,11 @@ public class GrupoService {
      **/
     private boolean permissaoGrupo(Grupo grupo, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
+        Papel coordenador = papelRepo.findByNome("COORDENADOR");
         Papel diretor = papelRepo.findByNome("DIRETOR");
 
         boolean isSolicitanteAdmin = hasPermissao(solicitante, admin);
+        boolean isSolicitanteCoordenador = hasPermissao(solicitante, coordenador);
         boolean isSolicitanteResponsavel = grupo.getResponsavel().equals(solicitante);
         boolean isSolicitanteDiretoria = false;
 
@@ -529,6 +528,6 @@ public class GrupoService {
                             gm.getDataFim() == null && gm.getDiscente().equals(discente));
         }
 
-        return isSolicitanteDiretoria || isSolicitanteResponsavel || isSolicitanteAdmin;
+        return isSolicitanteDiretoria || isSolicitanteResponsavel || isSolicitanteAdmin || isSolicitanteCoordenador;
     }
 }

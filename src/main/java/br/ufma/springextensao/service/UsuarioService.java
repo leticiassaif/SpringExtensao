@@ -2,17 +2,22 @@ package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.controller.dtos.DiscenteDTO;
 import br.ufma.springextensao.controller.dtos.DocenteDTO;
+import br.ufma.springextensao.controller.dtos.PainelHorasDTO;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.CursoRepo;
 import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import br.ufma.springextensao.model.Papel;
 import br.ufma.springextensao.model.Usuario;
-import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
+
+
+import java.util.ArrayList;
+
+import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
 @Service
 public class UsuarioService {
@@ -28,6 +33,8 @@ public class UsuarioService {
     @Autowired
     GrupoService grupoService;
 
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
     /**
      * Essa função cadastra um novo discente
      * @param discente objeto para transferir informação
@@ -41,14 +48,21 @@ public class UsuarioService {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
         }
 
+        String hash = encoder.encode(discente.getSenha());
+
         dis = Discente.builder().
                 nome(discente.getNome()).
                 email(discente.getEmail()).
-                senha(discente.getSenha()).
+                senha(hash).
                 ativo(true).
+                cargos(new ArrayList<>()).
                 matricula(discente.getMatricula()).
                 cargaHoraria(discente.getCargaHoraria()).
                 curso(curso).
+                solicitacoes(new ArrayList<>()).
+                grupos(new ArrayList<>()).
+                cargoHistorico(new ArrayList<>()).
+                oportunidades(new ArrayList<>()).
                 build();
 
         return usuarioRepo.save(dis);
@@ -67,13 +81,18 @@ public class UsuarioService {
             throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
         }
 
+        String hash = encoder.encode(docente.getSenha());
+
         Docente docenteNovo = Docente.builder().
                 nome(docente.getNome()).
                 email(docente.getEmail()).
-                senha(docente.getSenha()).
+                senha(hash).
                 ativo(true).
+                cargos(new ArrayList<>()).
                 siape(docente.getSiape()).
                 departamento(docente.getDepartamento()).
+                oportunidades(new ArrayList<>()).
+                grupos(new ArrayList<>()).
                 build();
 
         return usuarioRepo.save(docenteNovo);
@@ -122,33 +141,33 @@ public class UsuarioService {
         return usuarioRepo.save(docente);
     }
 
-    /**
-     * Essa função promove um discente para discente diretor
-     * @param id id do discente que deseja promover
-     * @return discente persistido no banco
-     **/
-    @Transactional
-    public Discente promoverDiscente(Integer id) {
-        // verificar se precisa de hasPermissao
-        if (id == null) {
-            throw new IllegalArgumentException("ID inválido.");
-        }
-
-        Usuario usuario = buscarPorId(id);
-
-        if (usuario == null) {
-            throw new IllegalArgumentException("Usuário não existe.");
-        }
-
-        if (!(usuario instanceof Discente discente)) {
-            throw new IllegalArgumentException("Usuário não é discente.");
-        }
-
-        Papel diretor = papelRepo.findByNome("DIRETOR");
-        discente.getCargos().add(diretor);
-
-        return usuarioRepo.save(discente);
-    }
+//    /**
+//     * Essa função promove um discente para discente diretor
+//     * @param id id do discente que deseja promover
+//     * @return discente persistido no banco
+//     **/
+//    @Transactional
+//    public Discente promoverDiscente(Integer id) {
+//        // verificar se precisa de hasPermissao
+//        if (id == null) {
+//            throw new IllegalArgumentException("ID inválido.");
+//        }
+//
+//        Usuario usuario = buscarPorId(id);
+//
+//        if (usuario == null) {
+//            throw new IllegalArgumentException("Usuário não existe.");
+//        }
+//
+//        if (!(usuario instanceof Discente discente)) {
+//            throw new IllegalArgumentException("Usuário não é discente.");
+//        }
+//
+//        Papel diretor = papelRepo.findByNome("DIRETOR");
+//        discente.getCargos().add(diretor);
+//
+//        return usuarioRepo.save(discente);
+//    }
 
     /**
      * Essa função desativa a conta de um usuário
@@ -215,12 +234,16 @@ public class UsuarioService {
     /**
      * Essa função autentica um usuário no login
      * @param email o email do usuário que se deseja achar
-     * @param senha a senha do usuário hasheada
+     * @param senha a senha do usuário em formato hash
      * @return o usuário buscado, nulo se não existir
      **/
     public Usuario autenticar(String email, String senha) {
-        if (email == null || senha == null) {
-            throw new IllegalArgumentException("Campo(s) obrigatório(s) inválido(s).");
+        if (!isEmailValido(email)) {
+            throw new IllegalArgumentException("Email inválido.");
+        }
+
+        if (senha == null || senha.isBlank()) {
+            throw new IllegalArgumentException("Senha inválida.");
         }
 
         Usuario usuario = buscarPorEmail(email);
@@ -229,7 +252,9 @@ public class UsuarioService {
             throw new IllegalArgumentException("Nenhum usuário possui esse email.");
         }
 
-        // fazer checagem de senha com hash
+        if (!encoder.matches(senha, usuario.getSenha())) {
+            throw new SecurityException("Senha incorreta.");
+        }
 
         return usuario;
     }
@@ -246,25 +271,17 @@ public class UsuarioService {
         return usuarioRepo.findByEmail(email).orElse(null);
     }
 
-    // EXEMPLO USADO POR GERALDO:
     /**
      * Essa função busca um usuário por id
-     * @param id chave do usuário única
-     * @return nulo se não existir, Usuário na base se existir
-     */
-    public Usuario obterUsuarioPorId(Integer id) {
+     * @param id o id do usuário que deseja achar
+     * @return o usuário buscado, nulo se não existir
+     **/
+    public Usuario buscarPorId(Integer id) {
         if (id == null) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("ID inválido.");
         }
         return usuarioRepo.findById(id).orElse(null);
     }
-
-    /**
-     * Essa função olha se o usuario informado possui permissão
-     * @param usuario usuario que está sendo perguntado,
-     * @param papel o cargo procurado,
-     * @return true caso tenha e false caso não tenha
-     */
 
     /**
      * Essa função retorna se um usuário possui um certo cargo
@@ -273,6 +290,25 @@ public class UsuarioService {
      * @return true se o usuário possuir, false caso contrário
      **/
     public static boolean hasPermissao(Usuario usuario, Papel papel) {
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário inválido.");
+        }
         return usuario.getCargos().contains(papel);
     }
+
+    public PainelHorasDTO painelHorasDTO(Integer id) {
+        Usuario usuario = buscarPorId(id);
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário nã existe");
+        }
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário não é discente.");
+        }
+        return PainelHorasDTO.builder()
+                            .cargaHorariaFeita(discente.getCargaHoraria())
+                            .cargaHorariaTotal(discente.getCurso().getCargaHoraria())
+                            .build();
+    }
+
+
 }

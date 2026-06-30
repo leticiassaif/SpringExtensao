@@ -27,9 +27,12 @@ public class Curso {
     @Column(name = "codigo")
     private String codigo;
 
-    // ppc
+    // ppc -> versão
     @Column(name="curriculo")
     private String curriculo;
+
+    @Column(name = "carga_horaria")
+    private Integer cargaHoraria;
 
     // data de fim da vigência do ppc
     @Column(name = "data_inicio")
@@ -38,6 +41,9 @@ public class Curso {
     // data de fim da vigência do ppc
     @Column(name = "data_fim")
     private LocalDate dataFim;
+
+    @OneToMany(mappedBy = "curso")
+    private List<UCE> uces;
 
     @OneToMany(mappedBy = "curso")
     private List<Discente> discentes;

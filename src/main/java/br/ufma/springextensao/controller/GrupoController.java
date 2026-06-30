@@ -1,68 +1,97 @@
 package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.GrupoDTO;
+import br.ufma.springextensao.model.Discente;
 import br.ufma.springextensao.model.Grupo;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.service.GrupoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpSession;
+import br.ufma.springextensao.service.UsuarioService;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/grupo")
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@RestController
+@RequestMapping("/api/usuario")
 public class GrupoController {
     @Autowired
     GrupoService grupoService;
 
+    @Autowired
+    UsuarioService usuarioService;
+
     @PostMapping("/criar")
     @ResponseStatus(HttpStatus.CREATED)
-    public Grupo criarGrupo(@RequestBody GrupoDTO grupo) {
-        return grupoService.criar(grupo, );
+    public Grupo criarGrupo(@RequestBody GrupoDTO grupo, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.criar(grupo, solicitante);
     }
 
-    @PatchMapping("/aprovar/{id}")
+    @PatchMapping("/aprovar/{idGrupo}")
     @ResponseStatus(HttpStatus.OK)
-    public Grupo aprovar(@PathVariable Integer idGrupo, @RequestParam Integer idDiscente) {
-        return grupoService.aprovar(, idGrupo, idDiscente);
+    public Grupo aprovar(@PathVariable Integer idGrupo, @RequestParam Integer idDiscente, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.aprovar(solicitante, idGrupo, idDiscente);
     }
 
     @PatchMapping("/rejeitar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Grupo rejeitar(@PathVariable Integer id, @RequestParam String justificativa) {
-        return grupoService.rejeitar(, id, justificativa);
+    public Grupo rejeitar(@PathVariable Integer id, @RequestParam String justificativa, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.rejeitar(solicitante, id, justificativa);
     }
 
     @PatchMapping("/addmembro/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
-    public Grupo adicionarMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente) {
-        return grupoService.adicionarMembro(, idGrupo, idDiscente);
+    public Grupo adicionarMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.adicionarMembro(solicitante, idGrupo, idDiscente);
     }
 
     @PatchMapping("/removemembro/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
-    public Grupo removerMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente) {
-        return grupoService.removerMembro(, idGrupo, idDiscente);
+    public Grupo removerMembro(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.removerMembro(solicitante, idGrupo, idDiscente);
     }
 
     @PatchMapping("/atribuircargo/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo atribuirCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
-                               @RequestParam String cargo) {
-        return grupoService.atribuirCargo(, idDiscente, idGrupo, cargo);
+                               @RequestParam String cargo, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.atribuirCargo(solicitante, idDiscente, idGrupo, cargo);
     }
 
     @PatchMapping("/removercargo/{idGrupo}/{idDiscente}")
     @ResponseStatus(HttpStatus.OK)
     public Grupo removerCargo(@PathVariable Integer idGrupo, @PathVariable Integer idDiscente,
-                               @RequestParam String cargo) {
-        return grupoService.removerCargo(, idDiscente, idGrupo, cargo);
+                              @RequestParam String cargo, HttpSession session) {
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
+        if (solicitante == null) {
+            throw new SecurityException("Usuário não está logado.");
+        }
+        return grupoService.removerCargo(solicitante, idDiscente, idGrupo, cargo);
     }
 
     @GetMapping("/id/{id}")
@@ -76,7 +105,7 @@ public class GrupoController {
     }
 
     @GetMapping("/lista/membros/{id}")
-    public List<Usuario> listaMembros(@PathVariable Integer id) {
+    public List<Discente> listaMembros(@PathVariable Integer id) {
         return grupoService.listaGrupoMembros(id);
     }
 }
