@@ -51,6 +51,9 @@ public class Oportunidade {
     @JoinColumn(name = "id_tipo")
     private Tipo tipo;
 
+    @OneToMany(mappedBy = "oportunidade")
+    private List<Inscricao> inscricoes;
+
     // discentes que participam da oportunidade
     @ManyToMany
     @JoinTable(name = "oportunidade_discente",
