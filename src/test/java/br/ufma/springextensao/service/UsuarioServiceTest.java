@@ -273,4 +273,357 @@ class UsuarioServiceTest {
                     .hasMessageContaining("não é docente");
         }
     }
+    // desativar -------------------------------------------------------------
+
+    @Nested
+    class Desativar {
+
+        @Test
+        void adminDeveDesativarQualquerUsuario() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(admin);
+            Discente alvo = discenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(alvo));
+
+            usuarioService.desativar(solicitante, 1);
+
+            assertThat(alvo.isAtivo()).isFalse();
+            verify(grupoService).removerDiscenteTodosGrupos(solicitante, 1);
+            verify(usuarioRepo).save(alvo);
+        }
+
+        @Test
+        void coordenadorDeveDesativarDiscente() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(coordenador);
+            Discente alvo = discenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(alvo));
+
+            usuarioService.desativar(solicitante, 1);
+
+            assertThat(alvo.isAtivo()).isFalse();
+            verify(grupoService).removerDiscenteTodosGrupos(solicitante, 1);
+        }
+
+        @Test
+        void coordenadorNaoDeveDesativarDocente() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(coordenador);
+            Docente alvo = docenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(2)).thenReturn(Optional.of(alvo));
+
+            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 2))
+                    .isInstanceOf(SecurityException.class);
+
+            verify(usuarioRepo, never()).save(any());
+            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
+        }
+
+        @Test
+        void usuarioSemPermissaoNaoDeveDesativar() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo();
+            Discente alvo = discenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(alvo));
+
+            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 1))
+                    .isInstanceOf(SecurityException.class);
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoUsuarioNaoExiste() {
+            Docente solicitante = docenteComCargo(papel("ADMIN"));
+
+            when(usuarioRepo.findById(404)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 404))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Usuário não existe");
+        }
+
+        @Test
+        void naoDeveRemoverDeGruposQuandoAlvoNaoEhDiscente() {
+            Papel admin = papel("ADMIN");
+            Docente solicitante = docenteComCargo(admin);
+            Docente alvo = docenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(usuarioRepo.findById(2)).thenReturn(Optional.of(alvo));
+
+            usuarioService.desativar(solicitante, 2);
+
+            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
+        }
+    }
+
+    // anonimizar --------------------------------------------------------------
+
+    @Nested
+    class Anonimizar {
+
+        @Test
+        void adminDeveAnonimizarDiscente() {
+            Papel admin = papel("ADMIN");
+            Docente solicitante = docenteComCargo(admin);
+            Discente alvo = discenteComCargo(papel("DISCENTE"));
+            alvo.setId(7);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(usuarioRepo.findById(7)).thenReturn(Optional.of(alvo));
+
+            usuarioService.anonimizar(solicitante, 7);
+
+            assertThat(alvo.isAtivo()).isFalse();
+            assertThat(alvo.getNome()).isEqualTo("Usuário Anonimizado");
+            assertThat(alvo.getEmail()).isEqualTo("anonimo_7@sistema.local");
+            assertThat(alvo.getSenha()).isEmpty();
+            assertThat(alvo.getCargos()).isEmpty();
+            verify(grupoService).removerDiscenteTodosGrupos(solicitante, 7);
+            verify(usuarioRepo).save(alvo);
+        }
+
+        @Test
+        void naoAdminNaoDeveAnonimizar() {
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(coordenador);
+            Papel admin = papel("ADMIN");
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+
+            assertThatThrownBy(() -> usuarioService.anonimizar(solicitante, 7))
+                    .isInstanceOf(SecurityException.class);
+
+            verify(usuarioRepo, never()).save(any());
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoUsuarioNaoExiste() {
+            Papel admin = papel("ADMIN");
+            Docente solicitante = docenteComCargo(admin);
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(usuarioRepo.findById(999)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> usuarioService.anonimizar(solicitante, 999))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Usuário não existe");
+        }
+    }
+
+    // autenticar --------------------------------------------------------------
+
+    @Nested
+    class Autenticar {
+
+        @Test
+        void deveAutenticarComCredenciaisCorretas() {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            Discente usuario = discenteComCargo();
+            usuario.setSenha(encoder.encode("senhaCorreta"));
+            usuario.setEmail("joana@ufma.br");
+
+            when(usuarioRepo.findByEmail("joana@ufma.br")).thenReturn(Optional.of(usuario));
+
+            Usuario resultado = usuarioService.autenticar("joana@ufma.br", "senhaCorreta");
+
+            assertThat(resultado).isEqualTo(usuario);
+        }
+
+        @Test
+        void deveLancarExcecaoComEmailInvalido() {
+            assertThatThrownBy(() -> usuarioService.autenticar("nao-eh-email", "qualquer"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Email inválido");
+
+            verifyNoInteractions(usuarioRepo);
+        }
+
+        @Test
+        void deveLancarExcecaoComSenhaNula() {
+            assertThatThrownBy(() -> usuarioService.autenticar("joana@ufma.br", null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Senha inválida");
+        }
+
+        @Test
+        void deveLancarExcecaoComSenhaEmBranco() {
+            assertThatThrownBy(() -> usuarioService.autenticar("joana@ufma.br", "   "))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Senha inválida");
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoEmailNaoCadastrado() {
+            when(usuarioRepo.findByEmail("ninguem@ufma.br")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> usuarioService.autenticar("ninguem@ufma.br", "qualquer123"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Nenhum usuário possui esse email");
+        }
+
+        @Test
+        void deveLancarExcecaoComSenhaIncorreta() {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            Discente usuario = discenteComCargo();
+            usuario.setSenha(encoder.encode("senhaCorreta"));
+            usuario.setEmail("joana@ufma.br");
+
+            when(usuarioRepo.findByEmail("joana@ufma.br")).thenReturn(Optional.of(usuario));
+
+            assertThatThrownBy(() -> usuarioService.autenticar("joana@ufma.br", "senhaErrada"))
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("Senha incorreta");
+        }
+    }
+
+    // buscarPorEmail / buscarPorId ----------------------------------------------
+
+    @Nested
+    class BuscarPorEmail {
+
+        @Test
+        void deveRetornarUsuarioQuandoEmailExiste() {
+            Discente usuario = discenteComCargo();
+            when(usuarioRepo.findByEmail("joana@ufma.br")).thenReturn(Optional.of(usuario));
+
+            Usuario resultado = usuarioService.buscarPorEmail("joana@ufma.br");
+
+            assertThat(resultado).isEqualTo(usuario);
+        }
+
+        @Test
+        void deveRetornarNuloQuandoEmailNaoExiste() {
+            when(usuarioRepo.findByEmail("ninguem@ufma.br")).thenReturn(Optional.empty());
+
+            Usuario resultado = usuarioService.buscarPorEmail("ninguem@ufma.br");
+
+            assertThat(resultado).isNull();
+        }
+
+        @Test
+        void deveLancarExcecaoComEmailInvalido() {
+            assertThatThrownBy(() -> usuarioService.buscarPorEmail("invalido"))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verifyNoInteractions(usuarioRepo);
+        }
+    }
+
+    @Nested
+    class BuscarPorId {
+
+        @Test
+        void deveRetornarUsuarioQuandoIdExiste() {
+            Discente usuario = discenteComCargo();
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(usuario));
+
+            Usuario resultado = usuarioService.buscarPorId(1);
+
+            assertThat(resultado).isEqualTo(usuario);
+        }
+
+        @Test
+        void deveRetornarNuloQuandoIdNaoExiste() {
+            when(usuarioRepo.findById(404)).thenReturn(Optional.empty());
+
+            Usuario resultado = usuarioService.buscarPorId(404);
+
+            assertThat(resultado).isNull();
+        }
+
+        @Test
+        void deveLancarExcecaoComIdNulo() {
+            assertThatThrownBy(() -> usuarioService.buscarPorId(null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ID inválido");
+
+            verifyNoInteractions(usuarioRepo);
+        }
+    }
+
+    // hasPermissao --------------------------------------------------------------
+
+    @Nested
+    class HasPermissao {
+
+        @Test
+        void deveRetornarTrueQuandoUsuarioPossuiCargo() {
+            Papel admin = papel("ADMIN");
+            Discente usuario = discenteComCargo(admin);
+
+            assertThat(UsuarioService.hasPermissao(usuario, admin)).isTrue();
+        }
+
+        @Test
+        void deveRetornarFalseQuandoUsuarioNaoPossuiCargo() {
+            Papel admin = papel("ADMIN");
+            Discente usuario = discenteComCargo();
+
+            assertThat(UsuarioService.hasPermissao(usuario, admin)).isFalse();
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoUsuarioEhNulo() {
+            Papel admin = papel("ADMIN");
+
+            assertThatThrownBy(() -> UsuarioService.hasPermissao(null, admin))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Usuário inválido");
+        }
+    }
+
+    // painelHorasDTO -------------------------------------------------------------
+
+    @Nested
+    class PainelHoras {
+
+        @Test
+        void deveMontarPainelParaDiscente() {
+            Curso curso = Curso.builder().id(1).cargaHoraria(200).build();
+            Discente discente = discenteComCargo();
+            discente.setCargaHoraria(80);
+            discente.setCurso(curso);
+
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(discente));
+
+            PainelHorasDTO resultado = usuarioService.painelHorasDTO(1);
+
+            assertThat(resultado.getCargaHorariaFeita()).isEqualTo(80);
+            assertThat(resultado.getCargaHorariaTotal()).isEqualTo(200);
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoUsuarioNaoExiste() {
+            when(usuarioRepo.findById(999)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> usuarioService.painelHorasDTO(999))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void deveLancarExcecaoQuandoUsuarioNaoEhDiscente() {
+            Docente docente = docenteComCargo();
+            when(usuarioRepo.findById(2)).thenReturn(Optional.of(docente));
+
+            assertThatThrownBy(() -> usuarioService.painelHorasDTO(2))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("não é discente");
+        }
+    }
 }
