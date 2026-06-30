@@ -86,7 +86,7 @@ public class UsuarioService {
         Docente docenteNovo = Docente.builder().
                 nome(docente.getNome()).
                 email(docente.getEmail()).
-                senha(docente.getSenha()).
+                senha(hash).
                 ativo(true).
                 cargos(new ArrayList<>()).
                 siape(docente.getSiape()).
