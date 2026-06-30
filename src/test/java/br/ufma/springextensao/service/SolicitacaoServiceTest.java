@@ -166,7 +166,7 @@ class SolicitacaoServiceTest {
             when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
 
             assertThatThrownBy(() -> solicitacaoService.submeter(dto))
-                    .isInstanceOf(java.time.format.DateTimeParseException.class);
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Data de solicitação inválida");
         }
 
         @Test

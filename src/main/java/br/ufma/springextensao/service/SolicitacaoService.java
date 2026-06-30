@@ -49,12 +49,24 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
+        if (solicitacao.getDataSolicitacao() == null || solicitacao.getDataSolicitacao().isBlank()) {
+            throw new IllegalArgumentException("Data de solicitação inválida.");
+        }
+
+        LocalDate dataSolicitacao;
+        try {
+            dataSolicitacao = LocalDate.parse(solicitacao.getDataSolicitacao());
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Data de solicitação inválida.");
+        }
+
         solicitacaoNovo = Solicitacao.builder().
                 descricao(solicitacao.getDescricao()).
                 discente(discente).
                 cargaHorario(solicitacao.getCargaHoraria()).
-                dataSolicitacao(LocalDate.parse(solicitacao.getDataSolicitacao())).
+                dataSolicitacao(dataSolicitacao).
                 dataAtual(LocalDate.now()).
+                status(Status.PENDENTE).
                 build();
 
         return solicitacaoRepo.save(solicitacaoNovo);
@@ -86,8 +98,14 @@ public class SolicitacaoService {
 
         solicitacao.setStatus(Status.APROVADO);
         solicitacao.setDataAtual(LocalDate.now());
+
+        if (solicitacao.getCargaHorario() == null || solicitacao.getCargaHorario() < 0) {
+            throw new IllegalArgumentException("Carga horária da solicitação inválida.");
+        }
+
         Discente discente = solicitacao.getDiscente();
-        discente.setCargaHoraria(discente.getCargaHoraria() + solicitacao.getCargaHorario());
+        Integer cargaAtual = discente.getCargaHoraria() != null ? discente.getCargaHoraria() : 0;
+        discente.setCargaHoraria(cargaAtual + solicitacao.getCargaHorario());
 
         solicitacaoRepo.save(solicitacao);
     }
@@ -101,7 +119,7 @@ public class SolicitacaoService {
      **/
     @Transactional
     public Solicitacao indeferir(Usuario solicitante, Integer id, String parecer) {
-        if (parecer == null) {
+        if (parecer == null || parecer.isBlank()) {
             throw new IllegalArgumentException("Parecer inválido.");
         }
 
@@ -147,6 +165,10 @@ public class SolicitacaoService {
 
         if (solicitacao.getStatus() != Status.INDEFERIDO) {
             throw new IllegalStateException("Solicitação não foi indeferida.");
+        }
+
+        if (solicitacao.getPrazoReenvio() == null) {
+            throw new IllegalStateException("Solicitação não possui prazo de reenvio definido.");
         }
 
         LocalDate hoje = LocalDate.now();
