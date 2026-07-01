@@ -227,8 +227,7 @@ public class UsuarioService {
             throw new IllegalArgumentException("Usuário não existe");
         }
 
-        if (!(hasPermissao(solicitante, coordenador) && usuario instanceof Discente)
-                && !hasPermissao(solicitante, admin)) {
+        if (!(hasPermissao(solicitante, coordenador) && !hasPermissao(solicitante, admin))) {
             throw new SecurityException("O solicitante não possui permissão para desativar o usuário");
         }
 
