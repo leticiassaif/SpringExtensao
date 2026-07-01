@@ -109,6 +109,7 @@ public class GrupoService {
         }
 
         grupo.setStatus(Status.APROVADO);
+        grupoRepo.save(grupo);
 
         adicionarMembro(solicitante, grupo.getId(), discente.getId());
         atribuirCargo(solicitante, discente.getId(), grupo.getId(), "DIRETOR");
@@ -285,11 +286,13 @@ public class GrupoService {
             throw new IllegalArgumentException("Cargo inválido.");
         }
 
-        if (cargo.equals("ADMIN") || cargo.equals("COORDENADOR") || cargo.equals("MEMBRO")) {
+        String c = cargo.toUpperCase();
+
+        if (c.equals("ADMIN") || c.equals("COORDENADOR") || c.equals("MEMBRO")) {
             throw new IllegalArgumentException("Esse cargo não pode ser atribuido.");
         }
 
-        Papel papel = papelRepo.findByNome(cargo.toUpperCase());
+        Papel papel = papelRepo.findByNome(c);
 
         if (papel == null) {
             throw new IllegalArgumentException("Papel não existe.");
