@@ -73,7 +73,7 @@ INSERT INTO oportunidade (id_oportunidade, titulo, descricao, carga_horaria, vag
  '2026-08-01', '2026-08-30', 'ABERTA', 1, 2, 2),
 
 (4, 'Estágio em Desenvolvimento Web', 'Vaga de estágio para desenvolvimento de sistemas web', 200, 1, 0,
- '2025-09-01', '2026-03-01', 'ENCERRADA', 2, 5, 1);
+ '2025-09-01', '2026-03-01', 'ENCERRADA', 1, 5, 1);
 
 
 -- (Opcional - PostgreSQL) Reajustar sequences após inserts com ID explícito
