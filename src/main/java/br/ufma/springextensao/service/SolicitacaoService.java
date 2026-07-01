@@ -76,9 +76,10 @@ public class SolicitacaoService {
      * Essa função aprova uma solicitação
      * @param solicitante quem chamou a função
      * @param id id da solicitação que se deseja aprovar
+     * @return solicitação persistida no banco
      **/
     @Transactional
-    public void aprovar(Usuario solicitante, Integer id) {
+    public Solicitacao aprovar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
@@ -107,7 +108,7 @@ public class SolicitacaoService {
         Integer cargaAtual = discente.getCargaHoraria() != null ? discente.getCargaHoraria() : 0;
         discente.setCargaHoraria(cargaAtual + solicitacao.getCargaHorario());
 
-        solicitacaoRepo.save(solicitacao);
+        return solicitacaoRepo.save(solicitacao);
     }
 
     /**

@@ -19,6 +19,7 @@ public class SolicitacaoController {
 
     @Autowired
     SolicitacaoService solicitacaoService;
+
     @Autowired
     UsuarioService usuarioService;
 
@@ -32,8 +33,7 @@ public class SolicitacaoController {
     @ResponseStatus(HttpStatus.OK)
     public Solicitacao aprovar(@PathVariable Integer id, HttpSession session) {
         Usuario solicitante = logado(session, usuarioService);
-        solicitacaoService.aprovar(solicitante, id);
-        return solicitacaoService.buscarPorId(id);
+        return solicitacaoService.aprovar(solicitante, id);
     }
 
     @PatchMapping("/indeferir/{id}")
