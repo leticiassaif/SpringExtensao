@@ -51,6 +51,14 @@ public class CursoService {
             throw new IllegalArgumentException("Dados do curso inválidos.");
         }
 
+        if (curso.getCodigo() == null || curso.getCodigo().isBlank()) {
+            throw new IllegalArgumentException("Código inválido.");
+        }
+
+        if (curso.getCurriculo() == null || curso.getCurriculo().isBlank()) {
+            throw new IllegalArgumentException("Currículo inválido.");
+        }
+
         if (curso.getCargaHoraria() == null || curso.getCargaHoraria() <= 0) {
             throw new IllegalArgumentException("Carga horária deve ser positiva.");
         }
@@ -93,8 +101,25 @@ public class CursoService {
             throw new IllegalArgumentException("Dados do curso inválidos.");
         }
 
+        if (curso.getCodigo() == null || curso.getCodigo().isBlank()) {
+            throw new IllegalArgumentException("Código inválido.");
+        }
+
+        if (curso.getCurriculo() == null || curso.getCurriculo().isBlank()) {
+            throw new IllegalArgumentException("Currículo inválido.");
+        }
+
+        if (curso.getDataInicio() == null || curso.getDataInicio().isBlank()
+                || curso.getDataFim() == null || curso.getDataFim().isBlank()) {
+            throw new IllegalArgumentException("Data(s) inválido.");
+        }
+
         LocalDate inicio = formataDataIso(curso.getDataInicio());
         LocalDate fim = formataDataIso(curso.getDataFim());
+
+        if (fim.isBefore(inicio)) {
+            throw new IllegalArgumentException("Data de fim não pode ser antes do início.");
+        }
 
         Curso c = Curso.builder().
                 nome("Ciência da Computação").

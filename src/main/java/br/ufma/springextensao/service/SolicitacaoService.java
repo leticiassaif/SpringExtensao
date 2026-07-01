@@ -49,6 +49,10 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
+        if (solicitacao.getDescricao() == null || solicitacao.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("Descrição da solicitação inválida.");
+        }
+
         if (solicitacao.getDataSolicitacao() == null || solicitacao.getDataSolicitacao().isBlank()) {
             throw new IllegalArgumentException("Data de solicitação inválida.");
         }
