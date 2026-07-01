@@ -206,4 +206,4 @@ A autorização de operações sensíveis é feita através da classe utilitári
 
 ## Autoria
 
-Projeto desenvolvido em grupo por estudantes de Ciência da Computação da UFMA como parte da disciplina de Engenharia de Software / POO.
+Projeto desenvolvido em grupo por estudantes de Ciência da Computação da UFMA como parte da disciplina de Linguagem de Programação 2.
