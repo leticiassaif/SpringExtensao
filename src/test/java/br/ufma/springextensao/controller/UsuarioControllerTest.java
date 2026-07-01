@@ -791,7 +791,7 @@ class UsuarioControllerTest {
         }
     }
 
-    // buscaId() (GET /api/usuario/id/{id}) ------------------------------------
+    // bucaId (GET /api/usuario/id/{id}) ------------------------------------
 
     @Nested
     class BuscaId {
