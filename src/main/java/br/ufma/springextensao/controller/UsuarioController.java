@@ -75,7 +75,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/id/{id}")
-    public Usuario bucaId(@PathVariable Integer id) {
+    public Usuario buscaId(@PathVariable Integer id) {
         return usuarioService.buscarPorId(id);
     }
 

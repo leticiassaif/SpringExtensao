@@ -49,6 +49,14 @@ public class UsuarioService {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
         }
 
+        if (!isEmailValido(discente.getEmail())) {
+            throw new IllegalArgumentException("Formatação de email incorreta.");
+        }
+
+        if (discente.getSenha().isBlank()) {
+            throw new IllegalArgumentException("Senha não pode ser vazia.");
+        }
+
         String hash = encoder.encode(discente.getSenha());
 
         dis = Discente.builder().
@@ -79,7 +87,15 @@ public class UsuarioService {
         Papel admin = papelRepo.findByNome("ADMIN");
 
         if (!hasPermissao(solicitante, admin)) {
-            throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
+            throw new SecurityException("O solicitante não possui permissão para cadastrar docente.");
+        }
+
+        if (!isEmailValido(docente.getEmail())) {
+            throw new IllegalArgumentException("Formatação de email incorreta.");
+        }
+
+        if (docente.getSenha().isBlank()) {
+            throw new IllegalArgumentException("Senha não pode ser vazia.");
         }
 
         String hash = encoder.encode(docente.getSenha());
@@ -257,6 +273,10 @@ public class UsuarioService {
             throw new IllegalArgumentException("Nenhum usuário possui esse email.");
         }
 
+        if (!usuario.isAtivo()) {
+            throw new IllegalStateException("O usuário precisa estar ativo.");
+        }
+
         if (!encoder.matches(senha, usuario.getSenha())) {
             throw new SecurityException("Senha incorreta.");
         }
@@ -304,7 +324,7 @@ public class UsuarioService {
     public PainelHorasDTO painelHorasDTO(Integer id) {
         Usuario usuario = buscarPorId(id);
         if (usuario == null) {
-            throw new IllegalArgumentException("Usuário nã existe");
+            throw new IllegalArgumentException("Usuário não existe");
         }
         if (!(usuario instanceof Discente discente)) {
             throw new IllegalArgumentException("Usuário não é discente.");
