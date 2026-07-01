@@ -30,8 +30,6 @@ public class OportunidadeService {
     UsuarioRepo usuarioRepo;
 
     public Oportunidade buscarOportunidadePorId(Integer id) {
-        if (id == null)
-            throw new IllegalArgumentException("ID é obrigatório.");
         return oportunidadeRepo.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Oportunidade não encontrada!"));
     }
@@ -47,6 +45,9 @@ public class OportunidadeService {
         if (!hasPermissao(solicitante, diretor) && !(solicitante instanceof Docente)) {
             throw new SecurityException("O solicitante não possui permissão.");
         }
+
+    public Oportunidade criaOportunidade(OportunidadeDTO oportunidade, Usuario solicitante) {
+        Papel diretor = papelRepo.findByNome("DIRETOR");
 
         if (oportunidade.getTitulo() == null || oportunidade.getTitulo().isBlank()){
             throw new IllegalArgumentException("Título é obrigatório.");
@@ -64,8 +65,9 @@ public class OportunidadeService {
             throw new IllegalArgumentException("Usuário não existe.");
         }
 
-        if (!(usuario instanceof Docente docente)) {
-            throw new IllegalArgumentException("Usuário não é docente.");
+        if (!(usuario instanceof Docente docente) 
+        if (UsuarioService.hasPermissao(solicitante, docente) || !hasPermissao(solicitante, diretor)) {
+            throw new IllegalArgumentException("Usuário não tem permissão.");
         }
 
         Oportunidade nova = Oportunidade.builder()
@@ -77,7 +79,6 @@ public class OportunidadeService {
                 .coordenador(docente)
                 .build();
 
-        return oportunidadeRepo.save(nova);
     }
 
     /**
@@ -115,9 +116,11 @@ public class OportunidadeService {
      * @return oportunidade persistida no banco
      */
     public Oportunidade aprovarOportunidade(Integer idOportunidade, Usuario solicitante) {
+        Papel admin = papelRepo.findByNome("ADMIN");
+
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
 
-        if (!(solicitante instanceof Docente)) {
+        if (!(solicitante instanceof Docente) || !hasPermissao(solicitante, admin)) {
             throw new SecurityException("O solicitante não possui permissão.");
         }
 
@@ -217,7 +220,6 @@ public class OportunidadeService {
 
         oportunidade.setStatus(StatusOp.CANCELADA);
 
-        return null;
     }
 
     /**
