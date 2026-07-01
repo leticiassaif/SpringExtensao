@@ -5,6 +5,7 @@ import br.ufma.springextensao.enums.StatusOp;
 import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.repository.OportunidadeRepo;
 import br.ufma.springextensao.repository.PapelRepo;
+import br.ufma.springextensao.repository.TipoRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,9 @@ public class OportunidadeService {
 
     @Autowired
     PapelRepo papelRepo;
+
+    @Autowired
+    TipoRepo tipoRepo;
 
     @Autowired
     UsuarioService usuarioService;
@@ -58,6 +62,12 @@ public class OportunidadeService {
             throw new IllegalArgumentException("Carga horária deve ser positiva.");
         }
 
+        Tipo tipo = tipoRepo.findByNome(oportunidade.getTipo().toUpperCase()).orElse(null);
+
+        if (tipo == null) {
+            throw new IllegalArgumentException("Tipo não existe.");
+        }
+
         Usuario usuario = usuarioService.buscarPorId(oportunidade.getIdDocente());
 
         if (usuario == null) {
@@ -76,6 +86,7 @@ public class OportunidadeService {
                 .vagasLivres(oportunidade.getVagas())
                 .status(StatusOp.RASCUNHO)
                 .coordenador(docente)
+                .tipo(tipo)
                 .build();
 
         return oportunidadeRepo.save(nova);
