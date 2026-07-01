@@ -49,12 +49,20 @@ public class UsuarioService {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
         }
 
+        if (discente.getNome() == null || discente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome inválido.");
+        }
+
         if (!isEmailValido(discente.getEmail())) {
             throw new IllegalArgumentException("Formatação de email incorreta.");
         }
 
         if (discente.getSenha().isBlank()) {
             throw new IllegalArgumentException("Senha não pode ser vazia.");
+        }
+
+        if (discente.getMatricula() == null || discente.getMatricula().isBlank()) {
+            throw new IllegalArgumentException("Matrícula inválida.");
         }
 
         String hash = encoder.encode(discente.getSenha());
@@ -90,12 +98,20 @@ public class UsuarioService {
             throw new SecurityException("O solicitante não possui permissão para cadastrar docente.");
         }
 
+        if (docente.getNome() == null || docente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome inválido.");
+        }
+
         if (!isEmailValido(docente.getEmail())) {
             throw new IllegalArgumentException("Formatação de email incorreta.");
         }
 
         if (docente.getSenha().isBlank()) {
             throw new IllegalArgumentException("Senha não pode ser vazia.");
+        }
+
+        if (docente.getSiape() == null || docente.getSiape().isBlank()) {
+            throw new IllegalArgumentException("SIAPE inválido.");
         }
 
         String hash = encoder.encode(docente.getSenha());

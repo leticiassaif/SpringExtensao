@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
+import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
 @Service
 public class GrupoService {
@@ -42,23 +43,35 @@ public class GrupoService {
      **/
     // automaticamente aprovar se for chamado por um docente
     @Transactional
-    public Grupo criar(GrupoDTO grupo, Usuario solicitante) {
+    public Grupo criar(GrupoDTO grupo) {
         if (grupo == null) {
             throw new IllegalArgumentException("Dados do grupo inválidos.");
         }
 
-        Grupo grupoNovo;
+        Grupo g;
         Usuario usuarioDoc = usuarioService.buscarPorId(grupo.getIdResponsavel());
 
         if (usuarioDoc == null) {
-            throw new IllegalArgumentException("Usuário(s) não existe.");
+            throw new IllegalArgumentException("Usuário não existe.");
         }
 
         if (!(usuarioDoc instanceof Docente docente)) {
             throw new IllegalArgumentException("Usuário não é docente.");
         }
 
-        grupoNovo = Grupo.builder().
+        if (grupo.getNome() == null || grupo.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome do grupo inválido.");
+        }
+
+        if (grupo.getDescricao() == null || grupo.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("Descrição do grupo inválida.");
+        }
+
+        if (!isEmailValido(grupo.getEmail())) {
+            throw new IllegalArgumentException("Email do grupo inválido.");
+        }
+
+        g = Grupo.builder().
                 nome(grupo.getNome()).
                 descricao(grupo.getDescricao()).
                 email(grupo.getEmail()).
@@ -69,7 +82,7 @@ public class GrupoService {
                 status(Status.PENDENTE).
                 build();
 
-        return grupoRepo.save(grupoNovo);
+        return grupoRepo.save(g);
     }
 
     /**
