@@ -25,18 +25,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
-/*
- * NOTA: assume-se jakarta.servlet.http.HttpSession (Spring Boot 3) e que o
- * helper estático `logado(session, usuarioService)` usado pelo controller é o
- * mesmo utilizado por CursoController, com o seguinte contrato observado em
- * CursoControllerTest:
- *  - sessão sem atributo "IdUsuarioLogado" (ou com tipo inválido) -> SecurityException
- *    "É preciso estar logado para chamar esse método."
- *  - atributo presente mas usuarioService.buscarPorId(id) retorna null -> IllegalArgumentException
- *    "Solicitante não foi encontrado."
- * Caso o comportamento real desse helper seja diferente, ajustar os testes marcados
- * com o comentário "// depende do helper logado()".
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class UsuarioControllerTest {
