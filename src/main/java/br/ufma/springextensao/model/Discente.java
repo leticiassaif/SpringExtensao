@@ -10,7 +10,6 @@ import java.util.List;
 @Entity
 @SuperBuilder
 @Table(name = "discente")
-@Inheritance // add strategy dps
 @PrimaryKeyJoinColumn(name = "id_usuario")
 @EqualsAndHashCode(callSuper = true)
 public class Discente extends Usuario {
