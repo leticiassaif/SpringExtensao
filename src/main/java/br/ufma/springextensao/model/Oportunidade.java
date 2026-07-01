@@ -34,6 +34,9 @@ public class Oportunidade {
     @Column(name = "vagas")
     private Integer vagas;
 
+    @Column(name = "vagas_livres")
+    private Integer vagasLivres;
+
     @Column(name = "data_inicio")
     private LocalDate dataInicio;
 

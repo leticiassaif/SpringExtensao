@@ -8,6 +8,7 @@ import br.ufma.springextensao.repository.PapelRepo;
 import br.ufma.springextensao.repository.UsuarioRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,15 +40,13 @@ public class OportunidadeService {
      * @param oportunidade objeto para transferir informação
      * @return oportunidade persistida no banco
      **/
+    @Transactional
     public Oportunidade criaOportunidade(Usuario solicitante, OportunidadeDTO oportunidade) {
         Papel diretor = papelRepo.findByNome("DIRETOR");
 
         if (!hasPermissao(solicitante, diretor) && !(solicitante instanceof Docente)) {
             throw new SecurityException("O solicitante não possui permissão.");
         }
-
-    public Oportunidade criaOportunidade(OportunidadeDTO oportunidade, Usuario solicitante) {
-        Papel diretor = papelRepo.findByNome("DIRETOR");
 
         if (oportunidade.getTitulo() == null || oportunidade.getTitulo().isBlank()){
             throw new IllegalArgumentException("Título é obrigatório.");
@@ -65,8 +64,7 @@ public class OportunidadeService {
             throw new IllegalArgumentException("Usuário não existe.");
         }
 
-        if (!(usuario instanceof Docente docente) 
-        if (UsuarioService.hasPermissao(solicitante, docente) || !hasPermissao(solicitante, diretor)) {
+        if (!(usuario instanceof Docente docente) || !hasPermissao(solicitante, diretor)) {
             throw new IllegalArgumentException("Usuário não tem permissão.");
         }
 
@@ -75,10 +73,12 @@ public class OportunidadeService {
                 .descricao(oportunidade.getDescricao())
                 .cargaHoraria(oportunidade.getCargaHoraria())
                 .vagas(oportunidade.getVagas())
+                .vagasLivres(oportunidade.getVagas())
                 .status(StatusOp.RASCUNHO)
                 .coordenador(docente)
                 .build();
 
+        return oportunidadeRepo.save(nova);
     }
 
     /**
@@ -87,6 +87,7 @@ public class OportunidadeService {
      * @param solicitante usuário que fez a solicitação
      * @return oportunidade persistida no banco
      */
+    @Transactional
     public Oportunidade publicarOportunidade(Integer idOportunidade, Usuario solicitante) {
         Papel diretor = papelRepo.findByNome("DIRETOR");
         Oportunidade oportunidade = buscarOportunidadePorId(idOportunidade);
@@ -115,6 +116,7 @@ public class OportunidadeService {
      * @param solicitante usuário que fez a solicitação
      * @return oportunidade persistida no banco
      */
+    @Transactional
     public Oportunidade aprovarOportunidade(Integer idOportunidade, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
@@ -143,6 +145,7 @@ public class OportunidadeService {
      * @param solicitante usuário que fez a solicitação
      * @return oportunidade persistida no banco
      */
+    @Transactional
     public Oportunidade iniciarOportunidade(Integer idOportunidade, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
@@ -172,6 +175,7 @@ public class OportunidadeService {
      * @param solicitante usuário que fez a solicitação
      * @return oportunidade persistida no banco
      */
+    @Transactional
     public Oportunidade encerrarOportunidade(Integer idOportunidade, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
@@ -205,6 +209,7 @@ public class OportunidadeService {
      * @param solicitante usuário que fez a solicitação
      * @return oportunidade persistida no banco
      */
+    @Transactional
     public Oportunidade cancelarOportunidade(Integer idOportunidade, Usuario solicitante) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
@@ -220,6 +225,17 @@ public class OportunidadeService {
 
         oportunidade.setStatus(StatusOp.CANCELADA);
 
+        return oportunidadeRepo.save(oportunidade);
+    }
+
+    @Transactional
+    public void diminuiVagasLivres(Oportunidade oportunidade) {
+        oportunidade.setVagasLivres(oportunidade.getVagasLivres() - 1);
+    }
+
+    @Transactional
+    public void aumentarVagasLivres(Oportunidade oportunidade) {
+        oportunidade.setVagasLivres(oportunidade.getVagasLivres() + 1);
     }
 
     /**

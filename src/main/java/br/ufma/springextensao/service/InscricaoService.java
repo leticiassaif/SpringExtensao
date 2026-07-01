@@ -1,69 +1,92 @@
-package br.ufma.extensao.servicos;
+package br.ufma.springextensao.service;
 
 import br.ufma.springextensao.controller.dtos.InscricaoDTO;
-import br.ufma.springextensao.model.Discente;
-import br.ufma.springextensao.model.Inscricao;
-import br.ufma.springextensao.model.Papel;
-import br.ufma.springextensao.model.Usuario;
-import br.ufma.springextensao.model.Papel;
+import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.enums.Status;
-import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.enums.StatusOp;
 import br.ufma.springextensao.repository.InscricaoRepo;
+import br.ufma.springextensao.repository.OportunidadeRepo;
 import br.ufma.springextensao.repository.PapelRepo;
 
-import br.ufma.springextensao.service.UsuarioService;
+import br.ufma.springextensao.repository.UsuarioRepo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
 public class InscricaoService {
 
-    private final InscricaoRepo inscricaoRepo;
-    private final PapelRepo papelRepo;
+    @Autowired
+    InscricaoRepo inscricaoRepo;
 
-    public InscricaoService(InscricaoRepo inscricaoRepository, PapelRepo papelRepo) {
-        this.inscricaoRepo = inscricaoRepository;
-        this.papelRepo = papelRepo;
-    }
+    @Autowired
+    PapelRepo papelRepo;
 
+    @Autowired
+    UsuarioService usuarioService;
+
+    @Autowired
+    OportunidadeService oportunidadeService;
+
+    @Autowired
+    OportunidadeRepo oportunidadeRepo;
+
+    @Autowired
+    UsuarioRepo usuarioRepo;
+
+    /**
+     *  Essa função permite uma pessoa se inscrever em uma oportunidade
+     * @param inscricao objeto de transferência
+     * @return inscrição persistida no banco
+     */
     public Inscricao inscrever(InscricaoDTO inscricao) {
+        Usuario usuario = usuarioService.buscarPorId(inscricao.getIdDiscente());
+        Oportunidade oportunidade = oportunidadeService.buscarOportunidadePorId(inscricao.getIdOportunidade());
 
-        if (inscricao.getDiscente() == null || inscricao.getOportunidade() == null || inscricao.getMotivacao() == null) {
-            throw new IllegalArgumentException("Dados obrigatórios ausentes.");
+        if (oportunidade == null) {
+            throw new IllegalArgumentException("Oportunidade não existente");
         }
 
-        if (inscricao.getOportunidade().getStatus() != StatusOp.ABERTA) {
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existente");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário precisa ser discente.");
+        }
+
+        if (inscricao.getMotivacao() == null || inscricao.getMotivacao().isBlank()) {
+            throw new IllegalArgumentException("Motivação ausentes.");
+        }
+
+        if (oportunidade.getStatus() != StatusOp.ABERTA) {
             throw new IllegalStateException("Oportunidade não está aberta para inscrições.");
         }
 
-        List<Inscricao> fila = inscricaoRepo.findByOportunidade(inscricao.getOportunidade());
+        Inscricao existente = inscricaoRepo.findByDiscenteAndOportunidade(discente, oportunidade).orElse(null);
 
-        for (Inscricao inscricaoExistente : fila) {
-            if (inscricaoExistente.getDiscente().equals(inscricao.getDiscente())) {
-                throw new IllegalStateException("O usuário " + inscricao.getDiscente().getNome() + " já foi inscrito na oportunidade");
-            }
+        if (existente != null) {
+            throw new IllegalStateException("O usuário " + discente + " já foi inscrito na oportunidade");
         }
-
-        //colocar geração de id
 
         Inscricao nova = Inscricao.builder()
                 .motivacao(inscricao.getMotivacao())
                 .status(Status.PENDENTE)
-                .justificativaCancelamento(inscricao.getJustificativaCancelamento())
-                .dataInscricao(inscricao.getDataInscricao())
-                .discente(inscricao.getDiscente())
-                .oportunidade(inscricao.getOportunidade())
+                .dataInscricao(LocalDate.now())
+                .discente(discente)
+                .oportunidade(oportunidade)
                 .build();
-
-        if (listarSlotsOcupados(inscricao.getOportunidade()).size() >= inscricao.getOportunidade().getVagas()) {
-            nova.setStatus(Status.ESPERA);
-        }
 
         return inscricaoRepo.save(nova);
     }
 
+    /**
+     *  Essa função lista os slots ocupados
+     * @param oportunidade objeto
+     * @return oportunidade persistida no banco
+     */
     private List<Inscricao> listarSlotsOcupados(Oportunidade oportunidade) {
 
         if (oportunidade == null) {
@@ -82,107 +105,143 @@ public class InscricaoService {
         return resultado;
     }
 
-    private Inscricao buscarInscricao(Integer inscricaoId, Oportunidade oportunidade) {
-        if (oportunidade == null) {
-            throw new IllegalArgumentException("Campos obrigatórios não foram informados");
+    /**
+     *  Essa função aprova uma inscrição
+     * @param id id da inscrição
+     * @param solicitante quem chamou a função
+     * @return inscrição persistida no banco
+     */
+    public Inscricao aprovar(Integer id, Usuario solicitante) {
+        if (solicitante == null) {
+            throw new IllegalArgumentException("O solicitante deve ser informado");
         }
 
-        if (inscricaoId == null || inscricaoId.describeConstable().isEmpty()) {
-            throw new IllegalArgumentException("O ID da Inscrição não foi informado");
+        if (!(solicitante instanceof Docente)) {
+            throw new IllegalArgumentException("O solicitante precisa ser docente");
         }
 
-        Inscricao inscricao = inscricaoRepo.findById(inscricaoId)
-                .orElseThrow(() -> new NoSuchElementException("A inscrição não foi achada"));
+        Inscricao inscricao = buscaPorId(id);
 
-        if (!inscricao.getOportunidade().equals(oportunidade)) {
-            throw new NoSuchElementException("A inscrição não pertence a essa oportunidade");
+        if (inscricao == null) {
+            throw new IllegalArgumentException("Inscrição não existe");
         }
 
-        return inscricao;
+        if (!(inscricao.getStatus().equals(Status.PENDENTE))) {
+            throw new IllegalStateException("Só é possível aprovar inscrições pendentes.");
+        }
+
+        Oportunidade oportunidade = inscricao.getOportunidade();
+        Discente discente = inscricao.getDiscente();
+
+        if (oportunidade.getVagasLivres() <= 0)  {
+            throw new IllegalStateException("A oportunidade não possui vagas livres.");
+        }
+
+        inscricao.setStatus(Status.APROVADO);
+        oportunidadeService.diminuiVagasLivres(oportunidade);
+        oportunidade.getDiscentesOp().add(discente);
+        discente.getOportunidades().add(oportunidade);
+
+        usuarioRepo.save(discente);
+        oportunidadeRepo.save(oportunidade);
+        return inscricaoRepo.save(inscricao);
     }
 
-    public Inscricao aprovar(Integer inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
-
+    /**
+     *  Essa função rejeita uma inscrição
+     * @param id id da inscrição
+     * @param justificativa justificativa da rejeição
+     * @param solicitante quem chamou a função
+     * @return inscrição persistida no banco
+     */
+    public Inscricao rejeitar(Integer id, String justificativa, Usuario solicitante) {
         if (solicitante == null || !solicitante.isAtivo()) {
-            throw new IllegalArgumentException("O Solicitante deve ser informado");
+            throw new IllegalArgumentException("O solicitante deve ser informado");
         }
 
-        if (inscricaoId == null) {
-            throw new IllegalArgumentException("O ID da Inscrição não foi informado");
+        Inscricao inscricao = buscaPorId(id);
+
+        if (inscricao == null) {
+            throw new IllegalArgumentException("Inscrição não existe.");
         }
 
-        Papel docente = papelRepo.findByNome("DOCENTE");
-        Papel coordenador = papelRepo.findByNome("COORDENADOR");
+        Oportunidade oportunidade = inscricao.getOportunidade();
 
-        if (UsuarioService.hasPermissao(solicitante, coordenador) || UsuarioService.hasPermissao(solicitante, docente)) {
-            int aprovadas = 0;
-            for (Inscricao i : listarSlotsOcupados(oportunidade)) {
-                if (i.getStatus().equals(Status.APROVADO)) {
-                    aprovadas++;
-                }
-            }
-
-            if (aprovadas >= oportunidade.getVagas()) {
-                throw new IllegalStateException("Vagas esgotadas");
-            }
-
-            Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
-
-            if (!inscricao.getStatus().equals(Status.PENDENTE)) {
-                throw new IllegalStateException("Só é possível aprovar inscrições PENDENTES");
-            }
-
-            inscricao.setStatus(Status.APROVADO);
-            return inscricaoRepo.save(inscricao);
-        }
-        throw new IllegalArgumentException("Sem perminssão para aprovar inscrições!");
-    }
-
-    public Inscricao rejeitarRemoverDiscente(Integer inscricaoId, String justificativa, Oportunidade oportunidade, Usuario solicitante) {
-
-        if (solicitante == null || !solicitante.isAtivo()) {
-            throw new IllegalArgumentException("O Solicitante deve ser informado");
-        }
-
-        if (inscricaoId == null ) {
-            throw new IllegalArgumentException("O ID da Inscrição não foi informado");
+        if (!solicitante.getId().equals(oportunidade.getCoordenador().getId())) {
+            throw new SecurityException("Apenas o responsável pode fazer isso.");
         }
 
         if (justificativa == null || justificativa.isBlank()) {
             throw new IllegalArgumentException("A justificativa não foi informada");
         }
 
-        Papel docente = papelRepo.findByNome("DOCENTE");
-        Papel coordenador = papelRepo.findByNome("COORDENADOR");
-
-        if (UsuarioService.hasPermissao(solicitante, coordenador) || UsuarioService.hasPermissao(solicitante, docente)) {
-            Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
-
-            if (inscricao.getStatus().equals(Status.APROVADO)) {
-                inscricao.setStatus(Status.CANCELADO);
-            } else if (inscricao.getStatus().equals(Status.PENDENTE)) {
-                inscricao.setStatus(Status.REJEITADO);
-            } else {
-                throw new IllegalStateException("Só é possível rejeitar inscrições PENDENTES ou remover participantes APROVADOS");
-            }
-
-            inscricao.setJustificativaCancelamento(justificativa);
-            inscricaoRepo.save(inscricao);
-            promoverFilaEspera(oportunidade);
-            return inscricao;
+        if (inscricao.getStatus() != Status.PENDENTE) {
+            throw new IllegalStateException("Só é possível rejeitar inscrições PENDENTES.");
         }
 
+        inscricao.setStatus(Status.REJEITADO);
+        inscricao.setJustificativaCancelamento(justificativa);
 
-        throw new IllegalStateException("O Solicitante deve ser o responsável pela Oportunidade");
+        return inscricaoRepo.save(inscricao);
     }
 
-    public Inscricao desistir(Integer inscricaoId, Oportunidade oportunidade, Usuario solicitante) {
-
-        if (inscricaoId == null) {
-            throw new IllegalArgumentException("O ID da Inscrição é inválido");
+    /**
+     *  Essa função remove um discente da oportunidade por meio da inscrição
+     * @param id id da inscrição
+     * @param justificativa justificativa da remoção
+     * @param solicitante quem chamou a função
+     * @return inscrição persistida no banco
+     */
+    public Inscricao removerDiscente(Integer id, String justificativa, Usuario solicitante) {
+        if (solicitante == null || !solicitante.isAtivo()) {
+            throw new IllegalArgumentException("O solicitante deve ser informado");
         }
 
-        Inscricao inscricao = buscarInscricao(inscricaoId, oportunidade);
+        Inscricao inscricao = buscaPorId(id);
+
+        if (inscricao == null) {
+            throw new IllegalArgumentException("Inscrição não existe.");
+        }
+
+        Oportunidade oportunidade = inscricao.getOportunidade();
+        Discente discente = inscricao.getDiscente();
+
+        if (!solicitante.getId().equals(oportunidade.getCoordenador().getId())) {
+            throw new SecurityException("Apenas o responsável pode fazer isso.");
+        }
+
+        if (justificativa == null || justificativa.isBlank()) {
+            throw new IllegalArgumentException("A justificativa não foi informada");
+        }
+
+        if (inscricao.getStatus() != Status.PENDENTE) {
+            throw new IllegalStateException("Só é possível retirar inscrições aprovadas.");
+        }
+
+        inscricao.setStatus(Status.CANCELADO);
+        inscricao.setJustificativaCancelamento(justificativa);
+
+        oportunidade.getDiscentesOp().remove(discente);
+        oportunidadeService.aumentarVagasLivres(oportunidade);
+        discente.getOportunidades().remove(oportunidade);
+
+        oportunidadeRepo.save(oportunidade);
+        usuarioRepo.save(discente);
+        return inscricaoRepo.save(inscricao);
+    }
+
+    /**
+     *  Essa função remove um discente da oportunidade por meio da inscrição
+     * @param id id da inscrição
+     * @param solicitante quem chamou a função
+     * @return inscrição persistida no banco
+     */
+    public Inscricao desistir(Integer id, Usuario solicitante) {
+        Inscricao inscricao = buscaPorId(id);
+
+        if (inscricao == null) {
+            throw new IllegalArgumentException("Inscrição não existe.");
+        }
 
         if (inscricao.getStatus().equals(Status.REJEITADO) || inscricao.getStatus().equals(Status.CANCELADO)) {
             throw new IllegalStateException("A inscrição já está rejeitada ou cancelada");
@@ -194,54 +253,79 @@ public class InscricaoService {
             throw new IllegalStateException("Apenas o próprio discente pode desistir");
         }
 
+        if (inscricao.getStatus() == Status.APROVADO) {
+            Oportunidade oportunidade = inscricao.getOportunidade();
+            Discente discente = inscricao.getDiscente();
+
+            oportunidade.getDiscentesOp().remove(discente);
+            oportunidadeService.aumentarVagasLivres(oportunidade);
+            discente.getOportunidades().remove(oportunidade);
+
+            oportunidadeRepo.save(oportunidade);
+            usuarioRepo.save(discente);
+        }
+
         inscricao.setStatus(Status.CANCELADO);
         inscricao.setJustificativaCancelamento("O Discente desistiu da vaga");
         inscricaoRepo.save(inscricao);
-        promoverFilaEspera(oportunidade);
         return inscricao;
     }
 
-    private void promoverFilaEspera(Oportunidade oportunidade) {
 
+    /**
+     *  Essa função lista as inscrições de uma oportunidade
+     * @param id id da oportunidade
+     * @return lista de inscrição, vazia caso não existam
+     */
+    public List<Inscricao> listarPorOportunidade(Integer id) {
+        Oportunidade oportunidade = oportunidadeService.buscarOportunidadePorId(id);
         if (oportunidade == null) {
-            throw new IllegalArgumentException("A Oportunidade não existe");
+            throw new IllegalArgumentException("Oportunidade não existe.");
         }
-
-        List<Inscricao> espera = listarFilaEspera(oportunidade);
-
-        if (!espera.isEmpty()) {
-            Inscricao primeiro = espera.get(0);
-            primeiro.setStatus(Status.PENDENTE);
-            inscricaoRepo.save(primeiro);
-        }
-    }
-
-
-    public List<Inscricao> listarPorOportunidade(Oportunidade oportunidade) {
-        if (oportunidade == null) {
-            throw new IllegalArgumentException("Oportunidade é obrigatória");
-        }
-
         return inscricaoRepo.findByOportunidade(oportunidade);
     }
 
-    public List<Inscricao> listarFilaEspera(Oportunidade oportunidade) {
+    /**
+     *  Essa função lista as inscrições na fila de espera de uma oportunidade
+     * @param id id da oportunidade
+     * @return lista de inscrição, vazia caso não existam
+     */
+    public List<Inscricao> listarFilaEspera(Integer id) {
+        Oportunidade oportunidade = oportunidadeService.buscarOportunidadePorId(id);
         if (oportunidade == null) {
-            throw new IllegalArgumentException("Oportunidade é obrigatória");
+            throw new IllegalArgumentException("Oportunidade não existe.");
         }
-
-        List<Inscricao> fila = inscricaoRepo.findByOportunidadeAndStatus(oportunidade, Status.ESPERA);
-
-        fila.sort(Comparator.comparing(Inscricao::getDataInscricao));
-
-        return fila;
+        return inscricaoRepo.findByOportunidadeAndStatus(oportunidade, Status.PENDENTE);
     }
 
-    public List<Inscricao> listarPorDiscente(Discente discente) {
-        if (discente == null || !discente.isAtivo()) {
-            throw new IllegalArgumentException("Discente é obrigatório");
+    /**
+     *  Essa função lista as inscrições de um discente
+     * @param id id do discente
+     * @return lista de inscrição, vazia caso não existam
+     */
+    public List<Inscricao> listarPorDiscente(Integer id) {
+        Usuario usuario = usuarioService.buscarPorId(id);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não existe.");
+        }
+
+        if (!(usuario instanceof Discente discente)) {
+            throw new IllegalArgumentException("Usuário precisa ser discente.");
         }
 
         return inscricaoRepo.findByDiscente(discente);
+    }
+
+    /**
+     *  Essa função busca uma inscrição
+     * @param id id da inscrição
+     * @return inscrição, nulo caso não exista
+     */
+    public Inscricao buscaPorId(Integer id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID inválido.");
+        }
+        return inscricaoRepo.findById(id).orElse(null);
     }
 }

@@ -1,8 +1,7 @@
 package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.InscricaoDTO;
-import br.ufma.extensao.servicos.InscricaoService;
-import br.ufma.springextensao.model.Discente;
+import br.ufma.springextensao.service.InscricaoService;
 import br.ufma.springextensao.model.Inscricao;
 import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.model.Usuario;
@@ -14,12 +13,15 @@ import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
 
+import static br.ufma.springextensao.util.Sessao.logado;
+
 @RestController
 @RequestMapping("/api/inscricao")
 public class InscricaoController {
 
     @Autowired
     InscricaoService inscricaoService;
+
     @Autowired
     UsuarioService usuarioService;
 
@@ -29,14 +31,11 @@ public class InscricaoController {
         return inscricaoService.inscrever(inscricao);
     }
 
-    @PatchMapping("/aprovar/{inscricaoid}")
+    @PatchMapping("/aprovar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Inscricao aprovar(@PathVariable Integer inscricaoId, @RequestBody Oportunidade oportunidade, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado!");
-        }
-        return inscricaoService.aprovar(inscricaoId, oportunidade, solicitante);
+    public Inscricao aprovar(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return inscricaoService.aprovar(id, solicitante);
     }
 
     @PatchMapping("/rejeitar/{inscricaoId}")

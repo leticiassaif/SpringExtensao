@@ -9,11 +9,10 @@ import java.time.LocalDate;
 
 @Data
 public class InscricaoDTO {
-    Integer id;
     String motivacao;
     Enum <Status> status;
     String justificativaCancelamento;
     LocalDate dataInscricao;
-    Discente discente;
-    Oportunidade oportunidade;
+    Integer idDiscente;
+    Integer idOportunidade;
 }
