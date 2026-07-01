@@ -146,7 +146,7 @@ public class CursoService {
         if (versao == null || versao.isBlank()) {
             throw new IllegalArgumentException("Versão inválida");
         }
-        return cursoRepo.findByVersao(versao).orElse(null);
+        return cursoRepo.findByCurriculo(versao).orElse(null);
     }
 
     /**

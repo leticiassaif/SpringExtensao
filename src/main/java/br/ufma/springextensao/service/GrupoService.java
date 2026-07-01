@@ -403,7 +403,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
-        GrupoMembro membro = grupoMembroRepo.findByGrupoAndDiscenteAndPapel(grupo, discente, papel).orElse(null);
+        GrupoMembro membro = grupoMembroRepo.findByGrupoAndDiscenteAndPapelExercido(grupo, discente, papel).orElse(null);
 
         if (membro == null) {
             throw new IllegalArgumentException("Discente não possui esse cargo.");
