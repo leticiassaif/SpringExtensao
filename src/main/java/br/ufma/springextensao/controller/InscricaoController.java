@@ -38,41 +38,41 @@ public class InscricaoController {
         return inscricaoService.aprovar(id, solicitante);
     }
 
-    @PatchMapping("/rejeitar/{inscricaoId}")
+    @PatchMapping("/rejeitar/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Inscricao rejeitarRemoverDiscente(@PathVariable Integer inscricaoId, @RequestParam String justificativa,
-                                             @RequestBody Oportunidade oportunidade, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado!");
-        }
-        return inscricaoService.rejeitarRemoverDiscente(inscricaoId, justificativa, oportunidade, solicitante);
+    public Inscricao rejeitar(@PathVariable Integer id, @RequestParam String justificativa, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return inscricaoService.rejeitar(id, justificativa, solicitante);
     }
 
-    @PatchMapping("/desistir/{inscricaoId}")
-    public Inscricao desistir(@PathVariable Integer inscricaoId, @RequestBody Oportunidade oportunidade,
-                              HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado!");
-        }
-        return inscricaoService.desistir(inscricaoId, oportunidade, solicitante);
+    @PatchMapping("/remover/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Inscricao remover(@PathVariable Integer id, @RequestParam String justificativa, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return inscricaoService.removerDiscente(id, justificativa, solicitante);
+    }
+
+    @PatchMapping("/desistir/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Inscricao desistir(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return inscricaoService.desistir(id, solicitante);
 
     }
 
-    @GetMapping("/oportunidade/{id}")
+    @GetMapping("/lista/oportunidade/{id}")
     public List<Inscricao> listarPorOportunidade(@PathVariable Integer id) {
-        return inscricaoService.listarPorOportunidade(oportunidade);
+        return inscricaoService.listarPorOportunidade(id);
     }
 
-    @GetMapping("/oportunidade/{id}/fila-espera")
+    @GetMapping("/lista/fila-espera/{id}")
     public List <Inscricao> listarFilaEspera(@PathVariable Integer id) {
-        return inscricaoService.listarFilaEspera(oportunidade);
+        return inscricaoService.listarFilaEspera(id);
     }
 
-    @GetMapping("/discente/{id}")
+    @GetMapping("/lista/discente/{id}")
     public List <Inscricao> listarPorDiscente(@PathVariable Integer id) {
-        return inscricaoService.listarPorDiscente(discente);
+        return inscricaoService.listarPorDiscente(id);
     }
 
 }

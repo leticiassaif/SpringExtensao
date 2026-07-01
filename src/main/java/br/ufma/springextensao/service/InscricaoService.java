@@ -22,9 +22,6 @@ public class InscricaoService {
     InscricaoRepo inscricaoRepo;
 
     @Autowired
-    PapelRepo papelRepo;
-
-    @Autowired
     UsuarioService usuarioService;
 
     @Autowired
