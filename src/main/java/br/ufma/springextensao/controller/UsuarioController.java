@@ -59,16 +59,14 @@ public class UsuarioController {
     @ResponseStatus(HttpStatus.OK)
     public Usuario desativar(@PathVariable Integer id, HttpSession session) {
         Usuario solicitante = logado(session, usuarioService);
-        usuarioService.desativar(solicitante, id);
-        return usuarioService.buscarPorId(id);
+        return usuarioService.desativar(solicitante, id);
     }
 
     @PatchMapping("/anonimizar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Usuario anonimizar(@PathVariable Integer id, HttpSession session) {
         Usuario solicitante = logado(session, usuarioService);
-        usuarioService.anonimizar(solicitante, id);
-        return usuarioService.buscarPorId(id);
+        return usuarioService.anonimizar(solicitante, id);
     }
 
     @GetMapping("/email/{email}")

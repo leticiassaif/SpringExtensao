@@ -176,9 +176,10 @@ public class UsuarioService {
      * Essa função desativa a conta de um usuário
      * @param solicitante quem chamou a função
      * @param id id do usuário
+     * @return usuário persistido no banco
      **/
     @Transactional
-    public void desativar(Usuario solicitante, Integer id) {
+    public Usuario desativar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
@@ -199,16 +200,17 @@ public class UsuarioService {
             grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
-        usuarioRepo.save(usuario);
+        return usuarioRepo.save(usuario);
     }
 
     /**
      * Essa função anonimiza a conta de um usuário
      * @param solicitante quem chamou a função
      * @param id id do usuário
+     * @return usuário persistido no banco
      **/
     @Transactional
-    public void anonimizar(Usuario solicitante, Integer id) {
+    public Usuario anonimizar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
         if (!hasPermissao(solicitante, admin)) {
@@ -231,7 +233,7 @@ public class UsuarioService {
             grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
-        usuarioRepo.save(usuario);
+        return usuarioRepo.save(usuario);
     }
 
     /**
