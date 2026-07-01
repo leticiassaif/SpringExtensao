@@ -3,7 +3,6 @@ package br.ufma.springextensao.controller;
 import br.ufma.springextensao.controller.dtos.InscricaoDTO;
 import br.ufma.springextensao.service.InscricaoService;
 import br.ufma.springextensao.model.Inscricao;
-import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.model.Usuario;
 import br.ufma.springextensao.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
