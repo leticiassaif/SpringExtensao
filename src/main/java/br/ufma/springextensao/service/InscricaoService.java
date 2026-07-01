@@ -58,7 +58,7 @@ public class InscricaoService {
                 .build();
 
         if (listarSlotsOcupados(inscricao.getOportunidade()).size() >= inscricao.getOportunidade().getVagas()) {
-            inscricao.setStatus(Status.ESPERA);
+            nova.setStatus(Status.ESPERA);
         }
 
         return inscricaoRepo.save(nova);

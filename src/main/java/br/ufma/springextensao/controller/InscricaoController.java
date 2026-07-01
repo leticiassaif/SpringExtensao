@@ -29,31 +29,31 @@ public class InscricaoController {
         return inscricaoService.inscrever(inscricao);
     }
 
-    @PatchMapping("/aprovar/{id}")
+    @PatchMapping("/aprovar/{inscricaoid}")
     @ResponseStatus(HttpStatus.OK)
     public Inscricao aprovar(@PathVariable Integer inscricaoId, @RequestBody Oportunidade oportunidade, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IsUsuaeioLogado"));
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
         if (solicitante == null) {
             throw new SecurityException("Usuário não está logado!");
         }
         return inscricaoService.aprovar(inscricaoId, oportunidade, solicitante);
     }
 
-    @PatchMapping("/rejeitar")
+    @PatchMapping("/rejeitar/{inscricaoId}")
     @ResponseStatus(HttpStatus.OK)
     public Inscricao rejeitarRemoverDiscente(@PathVariable Integer inscricaoId, @RequestParam String justificativa,
                                              @RequestBody Oportunidade oportunidade, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IsUsuaeioLogado"));
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
         if (solicitante == null) {
             throw new SecurityException("Usuário não está logado!");
         }
         return inscricaoService.rejeitarRemoverDiscente(inscricaoId, justificativa, oportunidade, solicitante);
     }
 
-    @PatchMapping("/desistir/{id}")
+    @PatchMapping("/desistir/{inscricaoId}")
     public Inscricao desistir(@PathVariable Integer inscricaoId, @RequestBody Oportunidade oportunidade,
                               HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IsUsuaeioLogado"));
+        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
         if (solicitante == null) {
             throw new SecurityException("Usuário não está logado!");
         }
@@ -62,17 +62,17 @@ public class InscricaoController {
     }
 
     @GetMapping("/oportunidade/{id}")
-    public List<Inscricao> listarPorOportunidade(Oportunidade oportunidade) {
+    public List<Inscricao> listarPorOportunidade(@PathVariable Integer id) {
         return inscricaoService.listarPorOportunidade(oportunidade);
     }
 
     @GetMapping("/oportunidade/{id}/fila-espera")
-    public List <Inscricao> listarFilaEspera(@RequestBody Oportunidade oportunidade) {
+    public List <Inscricao> listarFilaEspera(@PathVariable Integer id) {
         return inscricaoService.listarFilaEspera(oportunidade);
     }
 
     @GetMapping("/discente/{id}")
-    public List <Inscricao> listarPorDiscente(@RequestBody Discente discente) {
+    public List <Inscricao> listarPorDiscente(@PathVariable Integer id) {
         return inscricaoService.listarPorDiscente(discente);
     }
 
