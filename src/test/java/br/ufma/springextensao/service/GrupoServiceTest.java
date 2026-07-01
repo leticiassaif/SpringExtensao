@@ -118,7 +118,7 @@ class GrupoServiceTest {
             when(usuarioService.buscarPorId(responsavel.getId())).thenReturn(responsavel);
             when(grupoRepo.save(any(Grupo.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Grupo resultado = grupoService.criar(dto, responsavel);
+            Grupo resultado = grupoService.criar(dto);
 
             assertThat(resultado.getNome()).isEqualTo("Wanda");
             assertThat(resultado.getResponsavel()).isEqualTo(responsavel);
@@ -133,7 +133,7 @@ class GrupoServiceTest {
 
             when(usuarioService.buscarPorId(999)).thenReturn(null);
 
-            assertThatThrownBy(() -> grupoService.criar(dto, null))
+            assertThatThrownBy(() -> grupoService.criar(dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("não existe");
 
@@ -148,7 +148,7 @@ class GrupoServiceTest {
 
             when(usuarioService.buscarPorId(naoDocente.getId())).thenReturn(naoDocente);
 
-            assertThatThrownBy(() -> grupoService.criar(dto, naoDocente))
+            assertThatThrownBy(() -> grupoService.criar(dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("não é docente");
 
@@ -160,7 +160,7 @@ class GrupoServiceTest {
             GrupoDTO dto = new GrupoDTO();
             // idResponsavel fica null por padrão — usuarioService.buscarPorId(null) no mock retorna null
 
-            assertThatThrownBy(() -> grupoService.criar(dto, null))
+            assertThatThrownBy(() -> grupoService.criar(dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("não existe");
 
@@ -172,7 +172,7 @@ class GrupoServiceTest {
         // Fica VERMELHO até a correção.
         @Test
         void deveLancarExcecaoControladaQuandoDtoEhNulo() {
-            assertThatThrownBy(() -> grupoService.criar(null, docente()))
+            assertThatThrownBy(() -> grupoService.criar(null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .isNotInstanceOf(NullPointerException.class);
         }
