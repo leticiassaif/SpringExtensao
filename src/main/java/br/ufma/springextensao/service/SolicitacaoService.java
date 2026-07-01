@@ -53,6 +53,10 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Data de solicitação inválida.");
         }
 
+        if (solicitacao.getCargaHoraria() == null || solicitacao.getCargaHoraria() <= 0) {
+            throw new IllegalArgumentException("Carga horária deve ser positiva.");
+        }
+
         LocalDate dataSolicitacao;
         try {
             dataSolicitacao = LocalDate.parse(solicitacao.getDataSolicitacao());
@@ -229,7 +233,7 @@ public class SolicitacaoService {
     public List<Solicitacao> listarIndeferidos(Integer id) {
         Usuario usuario = usuarioService.buscarPorId(id);
         if (usuario == null) {
-            throw new IllegalArgumentException("Usuário nã existe");
+            throw new IllegalArgumentException("Usuário não existe");
         }
         if (!(usuario instanceof Discente discente)) {
             throw new IllegalArgumentException("Usuário não é discente.");
