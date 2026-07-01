@@ -3,17 +3,15 @@ package br.ufma.springextensao.controller;
 import br.ufma.springextensao.controller.dtos.OportunidadeDTO;
 import br.ufma.springextensao.model.Oportunidade;
 import br.ufma.springextensao.model.Usuario;
-import br.ufma.springextensao.repository.OportunidadeRepo;
 import br.ufma.springextensao.service.OportunidadeService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import br.ufma.springextensao.service.UsuarioService;
 
-import java.time.LocalDate;
 import java.util.List;
+import static br.ufma.springextensao.util.Sessao.logado;
 
 @RestController
 @RequestMapping("/api/oportunidade")
@@ -23,34 +21,53 @@ public class OportunidadeController {
     private UsuarioService usuarioService;
 
     @Autowired
-    private OportunidadeService service;
+    OportunidadeService oportunidadeService;
 
-    @PostMapping
-    public Oportunidade criaOportunidade(@RequestBody OportunidadeDTO dto) {
-        return service.criaOportunidade(dto);
+    @PostMapping("/criar")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Oportunidade criaOportunidade(@RequestBody OportunidadeDTO dto, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.criaOportunidade(solicitante, dto);
     }
 
-    @PostMapping("/publicar/{id}")
+    @PatchMapping("/publicar/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public Oportunidade publicarOportunidade(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
-        return service.publicarOportunidade(id, solicitante);
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.publicarOportunidade(id, solicitante);
     }
 
-    @PostMapping("/aprovar/{id}")
+    @PatchMapping("/aprovar/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public Oportunidade aprovarOportunidade(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
-        return service.aprovarOportunidade(id, solicitante);
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.aprovarOportunidade(id, solicitante);
+    }
+
+    @PatchMapping("/iniciar/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Oportunidade iniciarOportunidade(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.iniciarOportunidade(id, solicitante);
+    }
+
+    @PatchMapping("/encerrar/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Oportunidade encerrarOportunidade(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.encerrarOportunidade(id, solicitante);
+    }
+
+    @PatchMapping("/cancelar/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Oportunidade cancelarOportunidade(@PathVariable Integer id, HttpSession session) {
+        Usuario solicitante = logado(session, usuarioService);
+        return oportunidadeService.cancelarOportunidade(id, solicitante);
     }
 
     @GetMapping("/oportunidade")
     public List<Oportunidade> listarOportunidades() {
-        return service.listarOportunidades();
+        return oportunidadeService.listarOportunidades();
     }
 
 }

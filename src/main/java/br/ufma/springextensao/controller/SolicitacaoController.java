@@ -11,12 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import jakarta.servlet.http.HttpSession;
 
+import static br.ufma.springextensao.util.Sessao.logado;
+
 @RestController
 @RequestMapping("/api/solicitacao")
 public class SolicitacaoController {
 
     @Autowired
     SolicitacaoService solicitacaoService;
+
     @Autowired
     UsuarioService usuarioService;
 
@@ -29,21 +32,14 @@ public class SolicitacaoController {
     @PatchMapping("/aprovar/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Solicitacao aprovar(@PathVariable Integer id, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
-        solicitacaoService.aprovar(solicitante, id);
-        return solicitacaoService.buscarPorId(id);
+        Usuario solicitante = logado(session, usuarioService);
+        return solicitacaoService.aprovar(solicitante, id);
     }
 
     @PatchMapping("/indeferir/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Solicitacao indeferir(@PathVariable Integer id, @RequestParam String parecer, HttpSession session) {
-        Usuario solicitante = usuarioService.buscarPorId((Integer) session.getAttribute("IdUsuarioLogado"));
-        if (solicitante == null) {
-            throw new SecurityException("Usuário não está logado.");
-        }
+        Usuario solicitante = logado(session, usuarioService);
         return solicitacaoService.indeferir(solicitante, id, parecer);
     }
 

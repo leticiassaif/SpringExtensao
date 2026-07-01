@@ -49,8 +49,16 @@ public class SolicitacaoService {
             throw new IllegalArgumentException("Usuário não é discente.");
         }
 
+        if (solicitacao.getDescricao() == null || solicitacao.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("Descrição da solicitação inválida.");
+        }
+
         if (solicitacao.getDataSolicitacao() == null || solicitacao.getDataSolicitacao().isBlank()) {
             throw new IllegalArgumentException("Data de solicitação inválida.");
+        }
+
+        if (solicitacao.getCargaHoraria() == null || solicitacao.getCargaHoraria() <= 0) {
+            throw new IllegalArgumentException("Carga horária deve ser positiva.");
         }
 
         LocalDate dataSolicitacao;
@@ -76,9 +84,10 @@ public class SolicitacaoService {
      * Essa função aprova uma solicitação
      * @param solicitante quem chamou a função
      * @param id id da solicitação que se deseja aprovar
+     * @return solicitação persistida no banco
      **/
     @Transactional
-    public void aprovar(Usuario solicitante, Integer id) {
+    public Solicitacao aprovar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
@@ -107,7 +116,7 @@ public class SolicitacaoService {
         Integer cargaAtual = discente.getCargaHoraria() != null ? discente.getCargaHoraria() : 0;
         discente.setCargaHoraria(cargaAtual + solicitacao.getCargaHorario());
 
-        solicitacaoRepo.save(solicitacao);
+        return solicitacaoRepo.save(solicitacao);
     }
 
     /**
@@ -221,14 +230,14 @@ public class SolicitacaoService {
     }
 
     /**
-     * Essa função retorna as Solicitações indeferidas do usuario
-     * @param id
-     * @return
+     * Essa função retorna as Solicitações indeferidas do discente
+     * @param id id do discente
+     * @return lista com as solicitações indeferidas
      */
     public List<Solicitacao> listarIndeferidos(Integer id) {
         Usuario usuario = usuarioService.buscarPorId(id);
         if (usuario == null) {
-            throw new IllegalArgumentException("Usuário nã existe");
+            throw new IllegalArgumentException("Usuário não existe");
         }
         if (!(usuario instanceof Discente discente)) {
             throw new IllegalArgumentException("Usuário não é discente.");

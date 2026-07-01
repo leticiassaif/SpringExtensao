@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
@@ -43,9 +44,31 @@ public class UsuarioService {
     public Discente cadastrarDiscente(DiscenteDTO discente) {
         Discente dis;
         Curso curso = cursoRepo.findById(discente.getIdCurso()).orElse(null);
+        Integer ch = 0;
 
         if (curso == null) {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
+        }
+
+        if (discente.getNome() == null || discente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome inválido.");
+        }
+
+        if (!isEmailValido(discente.getEmail())) {
+            throw new IllegalArgumentException("Formatação de email incorreta.");
+        }
+
+        if (discente.getSenha().isBlank()) {
+            throw new IllegalArgumentException("Senha não pode ser vazia.");
+        }
+
+        if (discente.getMatricula() == null || discente.getMatricula().isBlank()) {
+            throw new IllegalArgumentException("Matrícula inválida.");
+        }
+
+        // checar se o discente tem carga horária, se não o sistema assume que a carga horária é zero
+        if (discente.getCargaHoraria() != null && discente.getCargaHoraria() > ch) {
+            ch = discente.getCargaHoraria();
         }
 
         String hash = encoder.encode(discente.getSenha());
@@ -57,7 +80,7 @@ public class UsuarioService {
                 ativo(true).
                 cargos(new ArrayList<>()).
                 matricula(discente.getMatricula()).
-                cargaHoraria(discente.getCargaHoraria()).
+                cargaHoraria(ch).
                 curso(curso).
                 solicitacoes(new ArrayList<>()).
                 grupos(new ArrayList<>()).
@@ -78,7 +101,23 @@ public class UsuarioService {
         Papel admin = papelRepo.findByNome("ADMIN");
 
         if (!hasPermissao(solicitante, admin)) {
-            throw new SecurityException("O solicitante não possui permissão para anonimizar o usuário");
+            throw new SecurityException("O solicitante não possui permissão para cadastrar docente.");
+        }
+
+        if (docente.getNome() == null || docente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome inválido.");
+        }
+
+        if (!isEmailValido(docente.getEmail())) {
+            throw new IllegalArgumentException("Formatação de email incorreta.");
+        }
+
+        if (docente.getSenha().isBlank()) {
+            throw new IllegalArgumentException("Senha não pode ser vazia.");
+        }
+
+        if (docente.getSiape() == null || docente.getSiape().isBlank()) {
+            throw new IllegalArgumentException("SIAPE inválido.");
         }
 
         String hash = encoder.encode(docente.getSenha());
@@ -175,9 +214,10 @@ public class UsuarioService {
      * Essa função desativa a conta de um usuário
      * @param solicitante quem chamou a função
      * @param id id do usuário
+     * @return usuário persistido no banco
      **/
     @Transactional
-    public void desativar(Usuario solicitante, Integer id) {
+    public Usuario desativar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
         Papel coordenador = papelRepo.findByNome("COORDENADOR");
 
@@ -198,16 +238,17 @@ public class UsuarioService {
             grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
-        usuarioRepo.save(usuario);
+        return usuarioRepo.save(usuario);
     }
 
     /**
      * Essa função anonimiza a conta de um usuário
      * @param solicitante quem chamou a função
      * @param id id do usuário
+     * @return usuário persistido no banco
      **/
     @Transactional
-    public void anonimizar(Usuario solicitante, Integer id) {
+    public Usuario anonimizar(Usuario solicitante, Integer id) {
         Papel admin = papelRepo.findByNome("ADMIN");
 
         if (!hasPermissao(solicitante, admin)) {
@@ -230,7 +271,7 @@ public class UsuarioService {
             grupoService.removerDiscenteTodosGrupos(solicitante, usuario.getId());
         }
 
-        usuarioRepo.save(usuario);
+        return usuarioRepo.save(usuario);
     }
 
     /**
@@ -252,6 +293,10 @@ public class UsuarioService {
 
         if (usuario == null) {
             throw new IllegalArgumentException("Nenhum usuário possui esse email.");
+        }
+
+        if (!usuario.isAtivo()) {
+            throw new IllegalStateException("O usuário precisa estar ativo.");
         }
 
         if (!encoder.matches(senha, usuario.getSenha())) {
@@ -295,13 +340,13 @@ public class UsuarioService {
         if (usuario == null) {
             throw new IllegalArgumentException("Usuário inválido.");
         }
-        return usuario.getCargos().contains(papel);
+        return usuario.getCargos().stream().anyMatch(p -> p.getId().equals(papel.getId()));
     }
 
     public PainelHorasDTO painelHorasDTO(Integer id) {
         Usuario usuario = buscarPorId(id);
         if (usuario == null) {
-            throw new IllegalArgumentException("Usuário nã existe");
+            throw new IllegalArgumentException("Usuário não existe");
         }
         if (!(usuario instanceof Discente discente)) {
             throw new IllegalArgumentException("Usuário não é discente.");

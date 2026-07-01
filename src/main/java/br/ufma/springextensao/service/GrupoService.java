@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static br.ufma.springextensao.service.UsuarioService.hasPermissao;
+import static br.ufma.springextensao.util.Validacao.isEmailValido;
 
 @Service
 public class GrupoService {
@@ -42,23 +43,35 @@ public class GrupoService {
      **/
     // automaticamente aprovar se for chamado por um docente
     @Transactional
-    public Grupo criar(GrupoDTO grupo, Usuario solicitante) {
+    public Grupo criar(GrupoDTO grupo) {
         if (grupo == null) {
             throw new IllegalArgumentException("Dados do grupo inválidos.");
         }
 
-        Grupo grupoNovo;
+        Grupo g;
         Usuario usuarioDoc = usuarioService.buscarPorId(grupo.getIdResponsavel());
 
         if (usuarioDoc == null) {
-            throw new IllegalArgumentException("Usuário(s) não existe.");
+            throw new IllegalArgumentException("Usuário não existe.");
         }
 
         if (!(usuarioDoc instanceof Docente docente)) {
             throw new IllegalArgumentException("Usuário não é docente.");
         }
 
-        grupoNovo = Grupo.builder().
+        if (grupo.getNome() == null || grupo.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome do grupo inválido.");
+        }
+
+        if (grupo.getDescricao() == null || grupo.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("Descrição do grupo inválida.");
+        }
+
+        if (!isEmailValido(grupo.getEmail())) {
+            throw new IllegalArgumentException("Email do grupo inválido.");
+        }
+
+        g = Grupo.builder().
                 nome(grupo.getNome()).
                 descricao(grupo.getDescricao()).
                 email(grupo.getEmail()).
@@ -69,7 +82,7 @@ public class GrupoService {
                 status(Status.PENDENTE).
                 build();
 
-        return grupoRepo.save(grupoNovo);
+        return grupoRepo.save(g);
     }
 
     /**
@@ -109,6 +122,7 @@ public class GrupoService {
         }
 
         grupo.setStatus(Status.APROVADO);
+        grupoRepo.save(grupo);
 
         adicionarMembro(solicitante, grupo.getId(), discente.getId());
         atribuirCargo(solicitante, discente.getId(), grupo.getId(), "DIRETOR");
@@ -285,11 +299,13 @@ public class GrupoService {
             throw new IllegalArgumentException("Cargo inválido.");
         }
 
-        if (cargo.equals("ADMIN") || cargo.equals("COORDENADOR") || cargo.equals("MEMBRO")) {
+        String c = cargo.toUpperCase();
+
+        if (c.equals("ADMIN") || c.equals("COORDENADOR") || c.equals("MEMBRO")) {
             throw new IllegalArgumentException("Esse cargo não pode ser atribuido.");
         }
 
-        Papel papel = papelRepo.findByNome(cargo.toUpperCase());
+        Papel papel = papelRepo.findByNome(c);
 
         if (papel == null) {
             throw new IllegalArgumentException("Papel não existe.");
@@ -330,7 +346,8 @@ public class GrupoService {
                 dataInicio(LocalDate.now()).
                 build();
 
-        if (!discente.getCargos().contains(papel)) {
+        boolean hasPapel = discente.getCargos().stream().anyMatch(p -> p.getId().equals(papel.getId()));
+        if (!hasPapel) {
             discente.getCargos().add(papel);
         }
 
@@ -466,7 +483,7 @@ public class GrupoService {
             throw new IllegalArgumentException("Discente não existe.");
         }
 
-        return discente.getGrupos().contains(grupo);
+        return discente.getGrupos().stream().anyMatch(g -> g.getId().equals(grupo.getId()));
     }
 
     //public Discente buscarMembroPorCargo() {}

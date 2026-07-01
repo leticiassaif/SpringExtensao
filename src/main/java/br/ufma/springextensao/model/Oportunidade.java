@@ -32,7 +32,10 @@ public class Oportunidade {
     private Integer cargaHoraria;
 
     @Column(name = "vagas")
-    private int vagas;
+    private Integer vagas;
+
+    @Column(name = "vagas_livres")
+    private Integer vagasLivres;
 
     @Column(name = "data_inicio")
     private LocalDate dataInicio;
@@ -51,12 +54,15 @@ public class Oportunidade {
     @JoinColumn(name = "id_tipo")
     private Tipo tipo;
 
+    @OneToMany(mappedBy = "oportunidade")
+    private List<Inscricao> inscricoes;
+
     // discentes que participam da oportunidade
     @ManyToMany
     @JoinTable(name = "oportunidade_discente",
             joinColumns = @JoinColumn(name = "id_oportunidade"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Usuario> discentesOp;
+    private List<Discente> discentesOp;
 
     // docente(s) responsável(eis)
     @ManyToOne
