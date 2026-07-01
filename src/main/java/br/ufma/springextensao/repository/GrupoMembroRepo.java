@@ -13,5 +13,5 @@ public interface GrupoMembroRepo
         extends JpaRepository<GrupoMembro, Integer> {
     List<GrupoMembro> findByDiscente(Discente discente);
     List<GrupoMembro> findByGrupoAndDiscente(Grupo grupo, Discente discente);
-    Optional<GrupoMembro> findByGrupoAndDiscenteAndPapel(Grupo grupo, Discente discente, Papel papel);
+    Optional<GrupoMembro> findByGrupoAndDiscenteAndPapelExercido(Grupo grupo, Discente discente, Papel papel);
 }
