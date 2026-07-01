@@ -59,7 +59,7 @@ public class Oportunidade {
     @JoinTable(name = "oportunidade_discente",
             joinColumns = @JoinColumn(name = "id_oportunidade"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario"))
-    private List<Usuario> discentesOp;
+    private List<Discente> discentesOp;
 
     // docente(s) responsável(eis)
     @ManyToOne
