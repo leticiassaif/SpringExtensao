@@ -44,9 +44,11 @@ class UsuarioServiceTest {
 
     // Helpers ----------------------------------------------------------
 
+    private int nextPapelId = 1;
+
     private Papel papel(String nome) {
         Papel p = new Papel();
-        p.setId(1);
+        p.setId(nextPapelId++);
         p.setNome(nome);
         return p;
     }
@@ -412,6 +414,7 @@ class UsuarioServiceTest {
             Docente alvo = docenteComCargo();
 
             when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(papel("COORDENADOR"));
             when(usuarioRepo.findById(2)).thenReturn(Optional.of(alvo));
 
             usuarioService.desativar(solicitante, 2);

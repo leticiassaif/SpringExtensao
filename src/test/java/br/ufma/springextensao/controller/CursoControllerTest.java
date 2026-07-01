@@ -24,10 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/*
- * NOTA: assume-se jakarta.servlet.http.HttpSession (Spring Boot 3). Se o projeto
- * usar Spring Boot 2 / javax, trocar o import para javax.servlet.http.HttpSession.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CursoControllerTest {

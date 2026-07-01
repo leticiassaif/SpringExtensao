@@ -31,23 +31,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/*
- * NOTA: assume-se jakarta.servlet.http.HttpSession (Spring Boot 3), no mesmo padrão
- * usado em CursoControllerTest.
- *
- * Este arquivo tem duas famílias de testes:
- *
- * 1) Testes de CONTROLLER (mockando SolicitacaoService) — seguem exatamente o padrão
- *    de CursoControllerTest: cobrem sessão/permissão (logado) e repasse de cada
- *    exceção documentada no service.
- *
- * 2) Testes de REGRAS DE NEGÓCIO (instanciando o SolicitacaoService REAL, com
- *    SolicitacaoRepo/PapelRepo/UsuarioRepo mockados via ReflectionTestUtils).
- *    Como o Controller não possui lógica própria de validação, os casos
- *    adversariais/numéricos/de data pedidos só podem ser verificados de forma
- *    significativa (e realmente ficarem VERMELHOS até a correção) exercitando o
- *    Service de verdade. Testes marcados "// BUG CONHECIDO" falham hoje.
- */
+// Duas famílias de testes: (1) Controller, mockando SolicitacaoService — sessão/permissão
+// e repasse de exceções; (2) regras de negócio, instanciando o SolicitacaoService real com
+// repositórios mockados via ReflectionTestUtils, já que o controller não valida nada sozinho.
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SolicitacaoControllerTest {
@@ -542,15 +528,10 @@ class SolicitacaoControllerTest {
                     .hasMessageContaining("prazo de reenvio");
         }
 
-        // BUG CONHECIDO: nem o endpoint (@PatchMapping("/reenviar/{id}")) nem
-        // SolicitacaoService.reenviar(Integer) recebem/validam o usuário solicitante
-        // (não há parâmetro HttpSession no controller, nem Usuario no service).
-        // Isso permite que qualquer chamador reenvie (ou efetivamente cancele, quando
-        // o prazo já expirou) a solicitação de qualquer discente apenas sabendo o ID.
-        // Não é possível expressar essa falha como um assert de teste unitário sem
-        // antes alterar a assinatura do método/endpoint para receber o solicitante;
-        // por isso não há um teste JUnit correspondente aqui — o achado está listado
-        // separadamente na lista de bugs ao final da resposta.
+        // Nota: nem o endpoint nem SolicitacaoService.reenviar(Integer) recebem o
+        // solicitante, então qualquer chamador pode reenviar a solicitação de
+        // qualquer discente sabendo o ID. Sem HttpSession/Usuario na assinatura,
+        // não há como expressar isso como um teste unitário.
     }
 
     // buscarPorId (GET /api/solicitacao/{id}) ---------------------------------
@@ -793,9 +774,6 @@ class SolicitacaoControllerTest {
             assertThat(resultado.getDataSolicitacao()).isEqualTo(LocalDate.parse("2024-05-10"));
         }
 
-        // BUG CONHECIDO: submeter() não valida cargaHoraria (aceita valores negativos),
-        // permitindo persistir uma solicitação PENDENTE com carga horária inválida —
-        // a validação só existe em aprovar(). Fica VERMELHO até a correção.
         @Test
         void deveRejeitarCargaHorariaNegativaNaSubmissao() {
             Discente discente = discente();
@@ -809,8 +787,6 @@ class SolicitacaoControllerTest {
             verify(solicitacaoRepo, never()).save(any());
         }
 
-        // BUG CONHECIDO: mesma causa do teste acima — cargaHoraria nula também não é
-        // validada em submeter(). Fica VERMELHO até a correção.
         @Test
         void deveRejeitarCargaHorariaNulaNaSubmissao() {
             Discente discente = discente();
@@ -1274,11 +1250,8 @@ class SolicitacaoControllerTest {
             assertThat(service.listarIndeferidos(d.getId())).isEmpty();
         }
 
-        // BUG CONHECIDO: a mensagem de erro tem um typo — "Usuário nã existe" em vez
-        // de "Usuário não existe.", inconsistente com listarPorDiscente()/submeter().
-        // Fica VERMELHO até a correção.
         @Test
-        void deveLancarExcecaoComMensagemCorretaQuandoUsuarioNaoExiste() {
+        void deveLancarExcecaoQuandoUsuarioNaoExiste() {
             when(usuarioService.buscarPorId(999)).thenReturn(null);
             SolicitacaoService service = novoServiceReal();
 

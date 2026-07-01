@@ -1,13 +1,11 @@
 package br.ufma.springextensao.controller;
 
 import br.ufma.springextensao.controller.dtos.OportunidadeDTO;
-import br.ufma.springextensao.model.Oportunidade;
-import br.ufma.springextensao.model.Usuario;
+import br.ufma.springextensao.enums.StatusOp;
+import br.ufma.springextensao.model.*;
 import br.ufma.springextensao.service.OportunidadeService;
 import br.ufma.springextensao.service.UsuarioService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,343 +14,376 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Testes unitários de OportunidadeController.
- *
- * Estratégia: MockMvc standalone (sem contexto Spring).
- * OportunidadeService e UsuarioService são mocks puros.
- *
- * Testes marcados com "BUG CONHECIDO" ficam VERMELHOS até a correção correspondente
- * ser aplicada no código de produção.
+/*
+ * Mesmo padrão de CursoControllerTest/GrupoControllerTest: OportunidadeService é
+ * mockado e a sessão é resolvida por Sessao.logado(session, usuarioService).
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OportunidadeControllerTest {
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Dependências mockadas
-    // ═══════════════════════════════════════════════════════════════════════
+    @Mock
+    OportunidadeService oportunidadeService;
 
     @Mock
-    private OportunidadeService service;
+    UsuarioService usuarioService;
 
     @Mock
-    private UsuarioService usuarioService;
+    HttpSession session;
 
     @InjectMocks
-    private OportunidadeController controller;
+    OportunidadeController oportunidadeController;
 
-    private MockMvc mockMvc;
-    private ObjectMapper mapper;
+    private int nextId = 1;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Setup
-    // ═══════════════════════════════════════════════════════════════════════
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
-        mapper  = new ObjectMapper().registerModule(new JavaTimeModule());
+    private Docente docente() {
+        Docente d = Docente.builder()
+                .nome("Carlos")
+                .email("carlos@ufma.br")
+                .senha("hash")
+                .ativo(true)
+                .cargos(new ArrayList<>())
+                .build();
+        d.setId(nextId++);
+        return d;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Helpers — construtores de entidades de teste
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private Usuario umUsuario(Integer id) {
-        Usuario u = new Usuario();
-        u.setId(id);
-        return u;
-    }
-
-    private Oportunidade umaOportunidade(Integer id) {
-        Oportunidade o = new Oportunidade();
-        o.setId(id);
+    private Oportunidade oportunidade(StatusOp status, Docente coordenador) {
+        Oportunidade o = Oportunidade.builder()
+                .titulo("Monitoria de Cálculo")
+                .descricao("Auxílio aos discentes de Cálculo I")
+                .cargaHoraria(60)
+                .vagas(2)
+                .vagasLivres(2)
+                .status(status)
+                .coordenador(coordenador)
+                .build();
+        o.setId(nextId++);
         return o;
     }
 
-    private OportunidadeDTO umDTO(String titulo) {
-        OportunidadeDTO dto = new OportunidadeDTO();
-        // ajuste os setters conforme os campos reais de OportunidadeDTO
-        dto.setTitulo(titulo);
-        return dto;
+    private OportunidadeDTO oportunidadeDTO(String titulo, Integer cargaHoraria, String tipo, Integer idDocente) {
+        return OportunidadeDTO.builder()
+                .titulo(titulo)
+                .descricao("Descrição da oportunidade")
+                .cargaHoraria(cargaHoraria)
+                .vagas(2)
+                .tipo(tipo)
+                .idDocente(idDocente)
+                .build();
     }
 
-    /** Sessão com usuário autenticado. */
-    private MockHttpSession sessaoLogada(Integer usuarioId) {
-        MockHttpSession s = new MockHttpSession();
-        s.setAttribute("IdUsuarioLogado", usuarioId);
-        return s;
+    /** Simula um usuário autenticado na sessão. */
+    private void logarComo(Usuario usuario) {
+        when(session.getAttribute("IdUsuarioLogado")).thenReturn(usuario.getId());
+        when(usuarioService.buscarPorId(usuario.getId())).thenReturn(usuario);
     }
 
-    /** Sessão sem nenhum atributo (não autenticado). */
-    private MockHttpSession sessaoVazia() {
-        return new MockHttpSession();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // POST /api/oportunidade
-    // ═══════════════════════════════════════════════════════════════════════
+    // criaOportunidade (POST /api/oportunidade/criar) ------------------------
 
     @Nested
-    class CriaOportunidadeTest {
+    class CriaOportunidade {
 
-        // BUG CONHECIDO [OportunidadeController.java, linha 29]:
-        // O método declara DOIS parâmetros com @RequestBody:
-        //   @RequestBody OportunidadeDTO dto, @RequestBody Usuario solicitante
-        // O Spring só consegue desserializar um único @RequestBody por handler.
-        // O segundo parâmetro nunca é preenchido — Spring lança
-        // HttpMessageNotReadableException ou o parâmetro chega null → NullPointerException.
-        // Fica VERMELHO até remover o @RequestBody de Usuario e obter o solicitante
-        // via HttpSession (padrão dos outros métodos) ou via @RequestHeader.
         @Test
-        void caminhoFeliz_deveCriarOportunidadeERetornar200() throws Exception {
-            OportunidadeDTO dto        = umDTO("Monitoria de Cálculo");
-            Usuario         solicitante = umUsuario(10);
-            Oportunidade    criada      = umaOportunidade(1);
+        void devePermitirCriacaoQuandoDocenteEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            OportunidadeDTO dto = oportunidadeDTO("Monitoria de Cálculo", 60, "MONITORIA", solicitante.getId());
+            Oportunidade esperada = oportunidade(StatusOp.RASCUNHO, solicitante);
+            when(oportunidadeService.criaOportunidade(solicitante, dto)).thenReturn(esperada);
 
-            // Após correção: solicitante virá da sessão, não do body
-            when(service.criaOportunidade(any(OportunidadeDTO.class), any(Usuario.class)))
-                    .thenReturn(criada);
+            Oportunidade resultado = oportunidadeController.criaOportunidade(dto, session);
 
-            mockMvc.perform(post("/api/oportunidade")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
-                    .andExpect(status().isOk())       // espera 200 (ou 201 após ajuste semântico)
-                    .andExpect(jsonPath("$.id").value(1));
-
-            verify(service).criaOportunidade(any(OportunidadeDTO.class), any(Usuario.class));
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).criaOportunidade(solicitante, dto);
         }
 
         @Test
-        void semCorpoJson_deveRetornar400() throws Exception {
-            mockMvc.perform(post("/api/oportunidade")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest());
+        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
+            when(session.getAttribute("IdUsuarioLogado")).thenReturn(7);
+            when(usuarioService.buscarPorId(7)).thenReturn(null);
+            OportunidadeDTO dto = oportunidadeDTO("Monitoria", 60, "MONITORIA", 1);
 
-            verifyNoInteractions(service);
+            assertThatThrownBy(() -> oportunidadeController.criaOportunidade(dto, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitante não foi encontrado.");
+
+            verify(oportunidadeService, never()).criaOportunidade(any(), any());
         }
 
         @Test
-        void tituloNulo_deveRetornar400() throws Exception {
-            // Adversarial: DTO com título null deve ser rejeitado por @Valid / @NotNull
-            // (a anotação ainda precisa ser adicionada ao DTO)
-            OportunidadeDTO dto = umDTO(null);
+        void deveLancarExcecaoQuandoSessaoNaoTemAtributo() {
+            OportunidadeDTO dto = oportunidadeDTO("Monitoria", 60, "MONITORIA", 1);
 
-            mockMvc.perform(post("/api/oportunidade")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
-                    .andExpect(status().isBadRequest());
+            assertThatThrownBy(() -> oportunidadeController.criaOportunidade(dto, session))
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
+
+            verify(oportunidadeService, never()).criaOportunidade(any(), any());
         }
 
         @Test
-        void tituloVazio_deveRetornar400() throws Exception {
-            OportunidadeDTO dto = umDTO("");
+        void devePropagarExcecaoQuandoSolicitanteSemPermissao() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            OportunidadeDTO dto = oportunidadeDTO("Monitoria", 60, "MONITORIA", solicitante.getId());
+            when(oportunidadeService.criaOportunidade(solicitante, dto))
+                    .thenThrow(new SecurityException("O solicitante não possui permissão."));
 
-            mockMvc.perform(post("/api/oportunidade")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(mapper.writeValueAsString(dto)))
-                    .andExpect(status().isBadRequest());
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // POST /api/oportunidade/publicar/{id}
-    // ═══════════════════════════════════════════════════════════════════════
-
-    @Nested
-    class PublicarOportunidadeTest {
-
-        @Test
-        void caminhoFeliz_devePublicarERetornar200() throws Exception {
-            Usuario      solicitante = umUsuario(10);
-            Oportunidade publicada   = umaOportunidade(1);
-
-            when(usuarioService.buscarPorId(10)).thenReturn(solicitante);
-            when(service.publicarOportunidade(eq(1), eq(solicitante))).thenReturn(publicada);
-
-            mockMvc.perform(post("/api/oportunidade/publicar/1")
-                            .session(sessaoLogada(10)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1));
-
-            verify(service).publicarOportunidade(eq(1), eq(solicitante));
-        }
-
-        // BUG CONHECIDO [OportunidadeController.java, linha 37]:
-        // O controller lança SecurityException (unchecked), que o Spring converte em
-        // HTTP 500. O comportamento correto para usuário não autenticado é 403 Forbidden.
-        // Fica VERMELHO até mapear SecurityException → 403 em um @ExceptionHandler global.
-        @Test
-        void usuarioNaoLogado_deveRetornar403() throws Exception {
-            when(usuarioService.buscarPorId(any())).thenReturn(null);
-
-            mockMvc.perform(post("/api/oportunidade/publicar/1")
-                            .session(sessaoVazia()))
-                    .andExpect(status().isForbidden()); // 403, não 500
-
-            verify(service, never()).publicarOportunidade(any(), any());
+            assertThatThrownBy(() -> oportunidadeController.criaOportunidade(dto, session))
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("não possui permissão");
         }
 
         @Test
-        void idInexistente_serviceDevePropagarExcecao() throws Exception {
-            Usuario solicitante = umUsuario(10);
+        void devePropagarExcecaoQuandoTituloEmBranco() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            OportunidadeDTO dto = oportunidadeDTO("", 60, "MONITORIA", solicitante.getId());
+            when(oportunidadeService.criaOportunidade(solicitante, dto))
+                    .thenThrow(new IllegalArgumentException("Título é obrigatório."));
 
-            when(usuarioService.buscarPorId(10)).thenReturn(solicitante);
-            when(service.publicarOportunidade(eq(999), eq(solicitante)))
-                    .thenThrow(new IllegalArgumentException("Oportunidade não encontrada"));
-
-            mockMvc.perform(post("/api/oportunidade/publicar/999")
-                            .session(sessaoLogada(10)))
-                    .andExpect(status().isBadRequest()); // ou 404, conforme ExceptionHandler
+            assertThatThrownBy(() -> oportunidadeController.criaOportunidade(dto, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Título é obrigatório.");
         }
 
         @Test
-        void idNegativo_serviceDevePropagarExcecao() throws Exception {
-            // Adversarial: valores negativos não devem ser aceitos silenciosamente
-            Usuario solicitante = umUsuario(10);
+        void devePropagarExcecaoQuandoTipoNaoExiste() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            OportunidadeDTO dto = oportunidadeDTO("Monitoria", 60, "INEXISTENTE", solicitante.getId());
+            when(oportunidadeService.criaOportunidade(solicitante, dto))
+                    .thenThrow(new IllegalArgumentException("Tipo não existe."));
 
-            when(usuarioService.buscarPorId(10)).thenReturn(solicitante);
-            when(service.publicarOportunidade(eq(-1), eq(solicitante)))
-                    .thenThrow(new IllegalArgumentException("Id inválido"));
-
-            mockMvc.perform(post("/api/oportunidade/publicar/-1")
-                            .session(sessaoLogada(10)))
-                    .andExpect(status().isBadRequest());
+            assertThatThrownBy(() -> oportunidadeController.criaOportunidade(dto, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Tipo não existe.");
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // POST /api/oportunidade/aprovar/{id}
-    // ═══════════════════════════════════════════════════════════════════════
+    // publicarOportunidade (PATCH /api/oportunidade/publicar/{id}) -----------
 
     @Nested
-    class AprovarOportunidadeTest {
+    class PublicarOportunidade {
 
         @Test
-        void caminhoFeliz_deveAprovarERetornar200() throws Exception {
-            Usuario      solicitante = umUsuario(10);
-            Oportunidade aprovada    = umaOportunidade(1);
+        void devePermitirPublicacaoQuandoDocenteEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            Oportunidade esperada = oportunidade(StatusOp.ABERTA, solicitante);
+            when(oportunidadeService.publicarOportunidade(1, solicitante)).thenReturn(esperada);
 
-            when(usuarioService.buscarPorId(10)).thenReturn(solicitante);
-            when(service.aprovarOportunidade(eq(1), eq(solicitante))).thenReturn(aprovada);
+            Oportunidade resultado = oportunidadeController.publicarOportunidade(1, session);
 
-            mockMvc.perform(post("/api/oportunidade/aprovar/1")
-                            .session(sessaoLogada(10)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1));
-
-            verify(service).aprovarOportunidade(eq(1), eq(solicitante));
-        }
-
-        // BUG CONHECIDO [OportunidadeController.java, linha 46]:
-        // SecurityException → 500 em vez de 403, mesmo problema de publicar.
-        @Test
-        void usuarioNaoLogado_deveRetornar403() throws Exception {
-            when(usuarioService.buscarPorId(any())).thenReturn(null);
-
-            mockMvc.perform(post("/api/oportunidade/aprovar/1")
-                            .session(sessaoVazia()))
-                    .andExpect(status().isForbidden());
-
-            verify(service, never()).aprovarOportunidade(any(), any());
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).publicarOportunidade(1, solicitante);
         }
 
         @Test
-        void statusInvalido_serviceDevePropagarExcecao() throws Exception {
-            // Ex.: aprovar uma oportunidade que já está ENCERRADA
-            Usuario solicitante = umUsuario(10);
+        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
+            when(session.getAttribute("IdUsuarioLogado")).thenReturn(7);
+            when(usuarioService.buscarPorId(7)).thenReturn(null);
 
-            when(usuarioService.buscarPorId(10)).thenReturn(solicitante);
-            when(service.aprovarOportunidade(eq(2), eq(solicitante)))
-                    .thenThrow(new IllegalStateException("Transição de status inválida"));
+            assertThatThrownBy(() -> oportunidadeController.publicarOportunidade(1, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitante não foi encontrado.");
 
-            mockMvc.perform(post("/api/oportunidade/aprovar/2")
-                            .session(sessaoLogada(10)))
-                    .andExpect(status().isConflict()); // 409, configurado no ExceptionHandler
+            verify(oportunidadeService, never()).publicarOportunidade(any(), any());
         }
 
         @Test
-        void usuarioSemPermissao_serviceDevePropagarExcecao() throws Exception {
-            // Ex.: discente tenta aprovar (papel não autorizado)
-            Usuario solicitante = umUsuario(20);
+        void devePropagarExcecaoQuandoOportunidadeNaoExiste() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            when(oportunidadeService.publicarOportunidade(999, solicitante))
+                    .thenThrow(new IllegalArgumentException("Oportunidade não encontrada."));
 
-            when(usuarioService.buscarPorId(20)).thenReturn(solicitante);
-            when(service.aprovarOportunidade(eq(1), eq(solicitante)))
-                    .thenThrow(new SecurityException("Sem permissão para aprovar"));
+            assertThatThrownBy(() -> oportunidadeController.publicarOportunidade(999, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Oportunidade não encontrada.");
+        }
 
-            mockMvc.perform(post("/api/oportunidade/aprovar/1")
-                            .session(sessaoLogada(20)))
-                    .andExpect(status().isForbidden()); // 403
+        @Test
+        void devePropagarExcecaoQuandoSolicitanteSemPermissao() {
+            Discente solicitante = Discente.builder().nome("Joana").email("joana@ufma.br").senha("hash")
+                    .ativo(true).cargos(new ArrayList<>()).build();
+            solicitante.setId(nextId++);
+            logarComo(solicitante);
+            when(oportunidadeService.publicarOportunidade(1, solicitante))
+                    .thenThrow(new SecurityException("O solicitante não possui permissão."));
+
+            assertThatThrownBy(() -> oportunidadeController.publicarOportunidade(1, session))
+                    .isInstanceOf(SecurityException.class)
+                    .hasMessageContaining("não possui permissão");
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // GET /api/oportunidade/oportunidade  (atenção: caminho duplicado!)
-    // ═══════════════════════════════════════════════════════════════════════
+    // aprovarOportunidade (PATCH /api/oportunidade/aprovar/{id}) -------------
 
     @Nested
-    class ListarOportunidadesTest {
+    class AprovarOportunidade {
 
-        // BUG CONHECIDO [OportunidadeController.java, linha 51]:
-        // @GetMapping("/oportunidade") sob @RequestMapping("/api/oportunidade") gera
-        // o path COMPLETO: /api/oportunidade/oportunidade.
-        // A intenção provável é que o endpoint seja GET /api/oportunidade (raiz).
-        // Fica VERMELHO enquanto o path correto for /api/oportunidade mas o mapping
-        // responder apenas em /api/oportunidade/oportunidade.
         @Test
-        void caminhoFeliz_deveListarOportunidades_noPathCorreto() throws Exception {
-            Oportunidade o = umaOportunidade(1);
-            when(service.listarOportunidades()).thenReturn(List.of(o));
+        void devePermitirAprovacaoQuandoAdminEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            Oportunidade esperada = oportunidade(StatusOp.ABERTA, solicitante);
+            when(oportunidadeService.aprovarOportunidade(1, solicitante)).thenReturn(esperada);
 
-            // Path CORRETO esperado após correção: GET /api/oportunidade
-            mockMvc.perform(get("/api/oportunidade"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(1));
+            Oportunidade resultado = oportunidadeController.aprovarOportunidade(1, session);
+
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).aprovarOportunidade(1, solicitante);
         }
 
         @Test
-        void listaVazia_deveRetornar200ComArrayVazio() throws Exception {
-            when(service.listarOportunidades()).thenReturn(Collections.emptyList());
+        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
+            when(session.getAttribute("IdUsuarioLogado")).thenReturn(7);
+            when(usuarioService.buscarPorId(7)).thenReturn(null);
 
-            mockMvc.perform(get("/api/oportunidade"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(0));
+            assertThatThrownBy(() -> oportunidadeController.aprovarOportunidade(1, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Solicitante não foi encontrado.");
+
+            verify(oportunidadeService, never()).aprovarOportunidade(any(), any());
         }
 
         @Test
-        void pathDuplicado_naoDeveMaisExistir() throws Exception {
-            // Confirma que após a correção, /api/oportunidade/oportunidade retorna 404
-            // (o path duplicado não deve existir como rota pública)
-            mockMvc.perform(get("/api/oportunidade/oportunidade"))
-                    .andExpect(status().isNotFound());
+        void devePropagarExcecaoQuandoOportunidadeNaoEstaAguardandoAprovacao() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            when(oportunidadeService.aprovarOportunidade(1, solicitante))
+                    .thenThrow(new IllegalStateException("Oportunidade deve está aguardando aprovação."));
+
+            assertThatThrownBy(() -> oportunidadeController.aprovarOportunidade(1, session))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("aguardando aprovação");
+        }
+    }
+
+    // iniciarOportunidade (PATCH /api/oportunidade/iniciar/{id}) -------------
+
+    @Nested
+    class IniciarOportunidade {
+
+        @Test
+        void devePermitirInicioQuandoDocenteEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            Oportunidade esperada = oportunidade(StatusOp.EM_EXECUCAO, solicitante);
+            when(oportunidadeService.iniciarOportunidade(1, solicitante)).thenReturn(esperada);
+
+            Oportunidade resultado = oportunidadeController.iniciarOportunidade(1, session);
+
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).iniciarOportunidade(1, solicitante);
         }
 
         @Test
-        void serviceRetornandoNull_deveRetornar500OuListaVazia() throws Exception {
-            // Adversarial: service retorna null em vez de lista vazia
-            when(service.listarOportunidades()).thenReturn(null);
+        void devePropagarExcecaoQuandoOportunidadeNaoEstaAberta() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            when(oportunidadeService.iniciarOportunidade(1, solicitante))
+                    .thenThrow(new IllegalStateException("Oportunidade deve está aberta."));
 
-            // O controller não trata null — Spring tentará serializar null como JSON "null"
-            // ou lançará NullPointerException dependendo do serializer.
-            // O correto seria o service nunca retornar null (deve retornar lista vazia).
-            mockMvc.perform(get("/api/oportunidade"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$").isArray()); // deve ser array, não null
+            assertThatThrownBy(() -> oportunidadeController.iniciarOportunidade(1, session))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("deve está aberta");
+        }
+    }
+
+    // encerrarOportunidade (PATCH /api/oportunidade/encerrar/{id}) -----------
+
+    @Nested
+    class EncerrarOportunidade {
+
+        @Test
+        void devePermitirEncerramentoQuandoDocenteEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            Oportunidade esperada = oportunidade(StatusOp.ENCERRADA, solicitante);
+            when(oportunidadeService.encerrarOportunidade(1, solicitante)).thenReturn(esperada);
+
+            Oportunidade resultado = oportunidadeController.encerrarOportunidade(1, session);
+
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).encerrarOportunidade(1, solicitante);
+        }
+
+        @Test
+        void devePropagarExcecaoQuandoOportunidadeNaoEstaEmExecucao() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            when(oportunidadeService.encerrarOportunidade(1, solicitante))
+                    .thenThrow(new IllegalStateException("Oportunidade deve está em execução."));
+
+            assertThatThrownBy(() -> oportunidadeController.encerrarOportunidade(1, session))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("em execução");
+        }
+    }
+
+    // cancelarOportunidade (PATCH /api/oportunidade/cancelar/{id}) -----------
+
+    @Nested
+    class CancelarOportunidade {
+
+        @Test
+        void devePermitirCancelamentoQuandoDocenteEstaLogado() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            Oportunidade esperada = oportunidade(StatusOp.CANCELADA, solicitante);
+            when(oportunidadeService.cancelarOportunidade(1, solicitante)).thenReturn(esperada);
+
+            Oportunidade resultado = oportunidadeController.cancelarOportunidade(1, session);
+
+            assertThat(resultado).isEqualTo(esperada);
+            verify(oportunidadeService, times(1)).cancelarOportunidade(1, solicitante);
+        }
+
+        @Test
+        void devePropagarExcecaoQuandoOportunidadeNaoExiste() {
+            Docente solicitante = docente();
+            logarComo(solicitante);
+            when(oportunidadeService.cancelarOportunidade(999, solicitante))
+                    .thenThrow(new IllegalArgumentException("Oportunidade não encontrada."));
+
+            assertThatThrownBy(() -> oportunidadeController.cancelarOportunidade(999, session))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Oportunidade não encontrada.");
+        }
+    }
+
+    // listarOportunidades (GET /api/oportunidade/oportunidade) ---------------
+
+    @Nested
+    class ListarOportunidades {
+
+        @Test
+        void deveRetornarTodasAsOportunidades() {
+            Oportunidade o = oportunidade(StatusOp.ABERTA, docente());
+            when(oportunidadeService.listarOportunidades()).thenReturn(List.of(o));
+
+            List<Oportunidade> resultado = oportunidadeController.listarOportunidades();
+
+            assertThat(resultado).containsExactly(o);
+        }
+
+        @Test
+        void deveRetornarListaVaziaQuandoNaoHaOportunidades() {
+            when(oportunidadeService.listarOportunidades()).thenReturn(List.of());
+
+            assertThat(oportunidadeController.listarOportunidades()).isEmpty();
         }
     }
 }

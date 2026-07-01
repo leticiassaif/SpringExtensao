@@ -25,16 +25,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
-/*
- * NOTA: GrupoController é um passthrough puro para GrupoService (via Sessao.logado
- * para autenticação). Por isso este teste cobre: (1) resolução de sessão/login,
- * (2) delegação com os parâmetros corretos na ordem correta, e (3) propagação de
- * toda exceção que o GrupoService declara para cada método (simulada via mock).
- * Bugs de lógica *interna* do GrupoService (ex.: releitura de estado obsoleto do
- * banco, comparação case-sensitive de cargo restrito) não são visíveis aqui porque
- * o service é totalmente mockado — eles exigem um GrupoServiceTest à parte. Ver
- * relatório de bugs ao final da resposta.
- */
+// GrupoController é um passthrough para GrupoService; cobre resolução de sessão,
+// delegação com os parâmetros corretos e propagação das exceções do service (mockado).
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class GrupoControllerTest {
@@ -123,127 +115,60 @@ class GrupoControllerTest {
     class CriarGrupo {
 
         @Test
-        void devePermitirCriacaoQuandoDocenteEstaLogado() {
-            Docente solicitante = docente(papel("ADMIN"));
-            logarComo(solicitante);
-            GrupoDTO dto = grupoDTO("PET Computação", "Extensão", "pet@ufma.br", 1, solicitante.getId());
-            Grupo esperado = grupo(Status.PENDENTE, solicitante);
-            when(grupoService.criar(dto, solicitante)).thenReturn(esperado);
-
-            Grupo resultado = grupoController.criarGrupo(dto, session);
-
-            assertThat(resultado).isEqualTo(esperado);
-            verify(grupoService, times(1)).criar(dto, solicitante);
-        }
-
-        @Test
-        void devePermitirCriacaoQuandoDiscenteEstaLogado() {
-            // O controller não filtra por papel; quem decide permissão é o service.
-            Discente solicitante = discente();
-            logarComo(solicitante);
+        void devePermitirCriacaoQuandoResponsavelEhDocente() {
             Docente responsavel = docente(papel("ADMIN"));
-            GrupoDTO dto = grupoDTO("Liga de IA", "Extensão", "liga@ufma.br", 1, responsavel.getId());
+            GrupoDTO dto = grupoDTO("PET Computação", "Extensão", "pet@ufma.br", 1, responsavel.getId());
             Grupo esperado = grupo(Status.PENDENTE, responsavel);
-            when(grupoService.criar(dto, solicitante)).thenReturn(esperado);
+            when(grupoService.criar(dto)).thenReturn(esperado);
 
-            Grupo resultado = grupoController.criarGrupo(dto, session);
+            Grupo resultado = grupoController.criarGrupo(dto);
 
             assertThat(resultado).isEqualTo(esperado);
-            verify(grupoService, times(1)).criar(dto, solicitante);
-        }
-
-        @Test
-        void deveLancarExcecaoQuandoUsuarioNaoEstaLogado() {
-            when(session.getAttribute("IdUsuarioLogado")).thenReturn(7);
-            when(usuarioService.buscarPorId(7)).thenReturn(null);
-            GrupoDTO dto = grupoDTO("Grupo", "Desc", "g@ufma.br", 1, 2);
-
-            assertThatThrownBy(() -> grupoController.criarGrupo(dto, session))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Solicitante não foi encontrado.");
-
-            verify(grupoService, never()).criar(any(), any());
-        }
-
-        @Test
-        void deveLancarExcecaoQuandoSessaoNaoTemAtributo() {
-            GrupoDTO dto = grupoDTO("Grupo", "Desc", "g@ufma.br", 1, 2);
-
-            assertThatThrownBy(() -> grupoController.criarGrupo(dto, session))
-                    .isInstanceOf(SecurityException.class)
-                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
-
-            verify(grupoService, never()).criar(any(), any());
-        }
-
-        @Test
-        void deveLancarExcecaoQuandoAtributoDeSessaoTemTipoInvalido() {
-            when(session.getAttribute("IdUsuarioLogado")).thenReturn("nao-e-um-id");
-            GrupoDTO dto = grupoDTO("Grupo", "Desc", "g@ufma.br", 1, 2);
-
-            assertThatThrownBy(() -> grupoController.criarGrupo(dto, session))
-                    .isInstanceOf(SecurityException.class)
-                    .isNotInstanceOf(ClassCastException.class)
-                    .hasMessageContaining("É preciso estar logado para chamar esse método.");
+            verify(grupoService, times(1)).criar(dto);
         }
 
         @Test
         void devePropagarExcecaoQuandoDtoEhNulo() {
-            Docente solicitante = docente(papel("ADMIN"));
-            logarComo(solicitante);
-            when(grupoService.criar(null, solicitante))
+            when(grupoService.criar(null))
                     .thenThrow(new IllegalArgumentException("Dados do grupo inválidos."));
 
-            assertThatThrownBy(() -> grupoController.criarGrupo(null, session))
+            assertThatThrownBy(() -> grupoController.criarGrupo(null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Dados do grupo inválidos.");
-
-            verify(grupoService, times(1)).criar(null, solicitante);
         }
 
         @Test
         void devePropagarExcecaoQuandoResponsavelNaoExiste() {
-            Docente solicitante = docente(papel("ADMIN"));
-            logarComo(solicitante);
             GrupoDTO dto = grupoDTO("Grupo", "Desc", "g@ufma.br", 1, 999);
-            when(grupoService.criar(dto, solicitante))
-                    .thenThrow(new IllegalArgumentException("Usuário(s) não existe."));
+            when(grupoService.criar(dto))
+                    .thenThrow(new IllegalArgumentException("Usuário não existe."));
 
-            assertThatThrownBy(() -> grupoController.criarGrupo(dto, session))
+            assertThatThrownBy(() -> grupoController.criarGrupo(dto))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Usuário(s) não existe.");
+                    .hasMessageContaining("Usuário não existe.");
         }
 
         @Test
         void devePropagarExcecaoQuandoResponsavelNaoEhDocente() {
-            Docente solicitante = docente(papel("ADMIN"));
-            logarComo(solicitante);
             Discente naoDocente = discente();
             GrupoDTO dto = grupoDTO("Grupo", "Desc", "g@ufma.br", 1, naoDocente.getId());
-            when(grupoService.criar(dto, solicitante))
+            when(grupoService.criar(dto))
                     .thenThrow(new IllegalArgumentException("Usuário não é docente."));
 
-            assertThatThrownBy(() -> grupoController.criarGrupo(dto, session))
+            assertThatThrownBy(() -> grupoController.criarGrupo(dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Usuário não é docente.");
         }
 
         @Test
-        void devePermitirDtoComCamposEmBrancoRepassandoParaOService() {
-            // O controller não faz nenhuma validação de conteúdo; qualquer checagem
-            // de nome/descrição/email em branco é responsabilidade do service.
-            // Aqui só provamos que o controller repassa o DTO como está, sem alterar
-            // nem rejeitar campos em branco por conta própria.
-            Docente solicitante = docente(papel("ADMIN"));
-            logarComo(solicitante);
-            GrupoDTO dto = grupoDTO("", "   ", "", null, solicitante.getId());
-            Grupo esperado = grupo(Status.PENDENTE, solicitante);
-            when(grupoService.criar(dto, solicitante)).thenReturn(esperado);
+        void devePropagarExcecaoQuandoEmailEhInvalido() {
+            GrupoDTO dto = grupoDTO("Grupo", "Desc", "email-invalido", 1, 2);
+            when(grupoService.criar(dto))
+                    .thenThrow(new IllegalArgumentException("Email do grupo inválido."));
 
-            Grupo resultado = grupoController.criarGrupo(dto, session);
-
-            assertThat(resultado).isEqualTo(esperado);
-            verify(grupoService, times(1)).criar(dto, solicitante);
+            assertThatThrownBy(() -> grupoController.criarGrupo(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Email do grupo inválido.");
         }
     }
 
