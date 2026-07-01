@@ -328,8 +328,11 @@ class UsuarioServiceTest {
     @Nested
     class Desativar {
 
+        // Regra de negócio atual: desativar() só é permitido para quem tem o papel
+        // COORDENADOR e NÃO tem o papel ADMIN; o tipo do alvo (Docente/Discente) não
+        // restringe mais quem pode ser desativado.
         @Test
-        void adminDeveDesativarQualquerUsuario() {
+        void adminSemCoordenadorNaoDeveDesativar() {
             Papel admin = papel("ADMIN");
             Papel coordenador = papel("COORDENADOR");
             Docente solicitante = docenteComCargo(admin);
@@ -339,11 +342,11 @@ class UsuarioServiceTest {
             when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
             when(usuarioRepo.findById(1)).thenReturn(Optional.of(alvo));
 
-            usuarioService.desativar(solicitante, 1);
+            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 1))
+                    .isInstanceOf(SecurityException.class);
 
-            assertThat(alvo.isAtivo()).isFalse();
-            verify(grupoService).removerDiscenteTodosGrupos(solicitante, 1);
-            verify(usuarioRepo).save(alvo);
+            verify(usuarioRepo, never()).save(any());
+            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
         }
 
         @Test
@@ -364,7 +367,7 @@ class UsuarioServiceTest {
         }
 
         @Test
-        void coordenadorNaoDeveDesativarDocente() {
+        void coordenadorDeveDesativarDocente() {
             Papel admin = papel("ADMIN");
             Papel coordenador = papel("COORDENADOR");
             Docente solicitante = docenteComCargo(coordenador);
@@ -374,11 +377,28 @@ class UsuarioServiceTest {
             when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
             when(usuarioRepo.findById(2)).thenReturn(Optional.of(alvo));
 
-            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 2))
+            usuarioService.desativar(solicitante, 2);
+
+            assertThat(alvo.isAtivo()).isFalse();
+            verify(usuarioRepo).save(alvo);
+            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
+        }
+
+        @Test
+        void coordenadorQueTambemEhAdminNaoDeveDesativar() {
+            Papel admin = papel("ADMIN");
+            Papel coordenador = papel("COORDENADOR");
+            Docente solicitante = docenteComCargo(admin, coordenador);
+            Discente alvo = discenteComCargo();
+
+            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
+            when(papelRepo.findByNome("COORDENADOR")).thenReturn(coordenador);
+            when(usuarioRepo.findById(1)).thenReturn(Optional.of(alvo));
+
+            assertThatThrownBy(() -> usuarioService.desativar(solicitante, 1))
                     .isInstanceOf(SecurityException.class);
 
             verify(usuarioRepo, never()).save(any());
-            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
         }
 
         @Test
@@ -405,21 +425,6 @@ class UsuarioServiceTest {
             assertThatThrownBy(() -> usuarioService.desativar(solicitante, 404))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Usuário não existe");
-        }
-
-        @Test
-        void naoDeveRemoverDeGruposQuandoAlvoNaoEhDiscente() {
-            Papel admin = papel("ADMIN");
-            Docente solicitante = docenteComCargo(admin);
-            Docente alvo = docenteComCargo();
-
-            when(papelRepo.findByNome("ADMIN")).thenReturn(admin);
-            when(papelRepo.findByNome("COORDENADOR")).thenReturn(papel("COORDENADOR"));
-            when(usuarioRepo.findById(2)).thenReturn(Optional.of(alvo));
-
-            usuarioService.desativar(solicitante, 2);
-
-            verify(grupoService, never()).removerDiscenteTodosGrupos(any(), any());
         }
 
         @Test
