@@ -732,7 +732,7 @@ class GrupoServiceTest {
             when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
             when(usuarioService.buscarPorId(diretorAtual.getId())).thenReturn(diretorAtual);
             when(grupoMembroRepo.findByGrupoAndDiscente(grupo, diretorAtual)).thenReturn(List.of(vinculoDiretor));
-            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapel(grupo, diretorAtual, diretor))
+            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapelExercido(grupo, diretorAtual, diretor))
                     .thenReturn(Optional.of(vinculoDiretor));
             when(grupoRepo.save(any(Grupo.class))).thenAnswer(inv -> inv.getArgument(0));
             when(usuarioRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -1099,7 +1099,7 @@ class GrupoServiceTest {
 
             when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
             when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
-            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapel(grupo, discente, tesoureiro))
+            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapelExercido(grupo, discente, tesoureiro))
                     .thenReturn(Optional.of(vinculo));
             when(usuarioRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(grupoMembroRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -1134,7 +1134,7 @@ class GrupoServiceTest {
 
             when(grupoRepo.findById(grupoA.getId())).thenReturn(Optional.of(grupoA));
             when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
-            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapel(grupoA, discente, tesoureiro))
+            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapelExercido(grupoA, discente, tesoureiro))
                     .thenReturn(Optional.of(vinculoGrupoA));
             when(grupoMembroRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(grupoRepo.save(any(Grupo.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -1266,7 +1266,7 @@ class GrupoServiceTest {
 
             when(grupoRepo.findById(grupo.getId())).thenReturn(Optional.of(grupo));
             when(usuarioService.buscarPorId(semCargo.getId())).thenReturn(semCargo);
-            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapel(grupo, semCargo, diretor))
+            when(grupoMembroRepo.findByGrupoAndDiscenteAndPapelExercido(grupo, semCargo, diretor))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> grupoService.removerCargo(responsavel, semCargo.getId(), grupo.getId(), "DIRETOR"))

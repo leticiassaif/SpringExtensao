@@ -1039,7 +1039,7 @@ class GrupoControllerTest {
         }
     }
 
-    // buscaId (GET /api/usuario/id/{id}) --------------------------------
+    // buscaId (GET /api/usuario/grupo/{id}) ------------------------------
 
     @Nested
     class BuscaId {

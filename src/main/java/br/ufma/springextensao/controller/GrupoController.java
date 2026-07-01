@@ -73,7 +73,7 @@ public class GrupoController {
         return grupoService.removerCargo(solicitante, idDiscente, idGrupo, cargo);
     }
 
-    @GetMapping("/id/{id}")
+    @GetMapping("/grupo/{id}")
     public Grupo buscaId(@PathVariable Integer id) {
         return grupoService.buscaPorId(id);
     }

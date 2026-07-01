@@ -434,7 +434,7 @@ class CursoServiceTest {
         @Test
         void deveRetornarCursoQuandoVersaoExiste() {
             Curso curso = curso("PPC2025");
-            when(cursoRepo.findByVersao("PPC2025")).thenReturn(Optional.of(curso));
+            when(cursoRepo.findByCurriculo("PPC2025")).thenReturn(Optional.of(curso));
 
             Curso resultado = cursoService.buscarPorVersao("PPC2025");
 
@@ -443,7 +443,7 @@ class CursoServiceTest {
 
         @Test
         void deveRetornarNuloQuandoVersaoNaoExiste() {
-            when(cursoRepo.findByVersao("INEXISTENTE")).thenReturn(Optional.empty());
+            when(cursoRepo.findByCurriculo("INEXISTENTE")).thenReturn(Optional.empty());
 
             Curso resultado = cursoService.buscarPorVersao("INEXISTENTE");
 

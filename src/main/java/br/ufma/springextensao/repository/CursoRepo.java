@@ -18,5 +18,5 @@ public interface CursoRepo
     @Query("SELECT c from Curso c ORDER BY c.dataInicio DESC")
     List<Curso> findHistorico();
 
-    Optional<Curso> findByVersao(String curriculo);
+    Optional<Curso> findByCurriculo(String curriculo);
 }
