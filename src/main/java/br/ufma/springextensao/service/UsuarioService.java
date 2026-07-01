@@ -182,34 +182,6 @@ public class UsuarioService {
         return usuarioRepo.save(docente);
     }
 
-//    /**
-//     * Essa função promove um discente para discente diretor
-//     * @param id id do discente que deseja promover
-//     * @return discente persistido no banco
-//     **/
-//    @Transactional
-//    public Discente promoverDiscente(Integer id) {
-//        // verificar se precisa de hasPermissao
-//        if (id == null) {
-//            throw new IllegalArgumentException("ID inválido.");
-//        }
-//
-//        Usuario usuario = buscarPorId(id);
-//
-//        if (usuario == null) {
-//            throw new IllegalArgumentException("Usuário não existe.");
-//        }
-//
-//        if (!(usuario instanceof Discente discente)) {
-//            throw new IllegalArgumentException("Usuário não é discente.");
-//        }
-//
-//        Papel diretor = papelRepo.findByNome("DIRETOR");
-//        discente.getCargos().add(diretor);
-//
-//        return usuarioRepo.save(discente);
-//    }
-
     /**
      * Essa função desativa a conta de um usuário
      * @param solicitante quem chamou a função
