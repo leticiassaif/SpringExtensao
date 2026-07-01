@@ -44,6 +44,7 @@ public class UsuarioService {
     public Discente cadastrarDiscente(DiscenteDTO discente) {
         Discente dis;
         Curso curso = cursoRepo.findById(discente.getIdCurso()).orElse(null);
+        Integer ch = 0;
 
         if (curso == null) {
             throw new IllegalArgumentException("Curso com esse ID não existe.");
@@ -65,6 +66,11 @@ public class UsuarioService {
             throw new IllegalArgumentException("Matrícula inválida.");
         }
 
+        // checar se o discente tem carga horária, se não o sistema assume que a carga horária é zero
+        if (discente.getCargaHoraria() != null && discente.getCargaHoraria() > ch) {
+            ch = discente.getCargaHoraria();
+        }
+
         String hash = encoder.encode(discente.getSenha());
 
         dis = Discente.builder().
@@ -74,7 +80,7 @@ public class UsuarioService {
                 ativo(true).
                 cargos(new ArrayList<>()).
                 matricula(discente.getMatricula()).
-                cargaHoraria(discente.getCargaHoraria()).
+                cargaHoraria(ch).
                 curso(curso).
                 solicitacoes(new ArrayList<>()).
                 grupos(new ArrayList<>()).
