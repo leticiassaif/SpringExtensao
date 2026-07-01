@@ -15,8 +15,8 @@ public class OportunidadeDTO {
     String descricao;
     LocalDate dataInicio;
     LocalDate dataFim;
-    Enum <StatusOp> status;
+    Enum<StatusOp> status;
     Integer vagas;
     Integer cargaHoraria;
-    Integer idCurso;
+    Integer idDocente;
 }
