@@ -160,6 +160,8 @@ class SolicitacaoServiceTest {
             Discente discente = discente(0);
             SolicitacaoDTO dto = SolicitacaoDTO.builder()
                     .idDiscente(discente.getId())
+                    .descricao("Monitoria")
+                    .cargaHoraria(20)
                     .dataSolicitacao("31/02/2025") // não é ISO-8601, formato errado
                     .build();
 
@@ -170,14 +172,12 @@ class SolicitacaoServiceTest {
         }
 
         @Test
-        void deveLancarExcecaoControladaQuandoDataSolicitacaoEhNula() {
-            // BUG CONHECIDO: submeter() hoje lança NullPointerException quando
-            // dataSolicitacao é null (LocalDate.parse(null)). O esperado é uma
-            // exceção controlada de validação. Este teste fica VERMELHO até a
-            // validação ser adicionada.
+        void deveLancarExcecaoQuandoDataSolicitacaoEhNula() {
             Discente discente = discente(0);
             SolicitacaoDTO dto = SolicitacaoDTO.builder()
                     .idDiscente(discente.getId())
+                    .descricao("Monitoria")
+                    .cargaHoraria(20)
                     .dataSolicitacao(null)
                     .build();
 
@@ -185,17 +185,16 @@ class SolicitacaoServiceTest {
 
             assertThatThrownBy(() -> solicitacaoService.submeter(dto))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .isNotInstanceOf(NullPointerException.class);
+                    .hasMessageContaining("Data de solicitação inválida");
         }
 
         @Test
         void deveDefinirStatusPendenteAoSubmeter() {
-            // BUG CONHECIDO: submeter() atualmente não seta status nenhum,
-            // a solicitação nasce com status == null em vez de PENDENTE.
-            // Este teste fica VERMELHO até o service ser corrigido.
             Discente discente = discente(0);
             SolicitacaoDTO dto = SolicitacaoDTO.builder()
                     .idDiscente(discente.getId())
+                    .descricao("Monitoria")
+                    .cargaHoraria(20)
                     .dataSolicitacao(LocalDate.now().toString())
                     .build();
 
@@ -208,21 +207,22 @@ class SolicitacaoServiceTest {
         }
 
         @Test
-        void deveCriarSolicitacaoComCargaHorariaNulaNoDto() {
+        void deveRejeitarCargaHorariaNulaNaSubmissao() {
             Discente discente = discente(0);
             SolicitacaoDTO dto = SolicitacaoDTO.builder()
                     .idDiscente(discente.getId())
+                    .descricao("Monitoria")
                     .dataSolicitacao(LocalDate.now().toString())
                     .cargaHoraria(null)
                     .build();
 
             when(usuarioService.buscarPorId(discente.getId())).thenReturn(discente);
-            when(solicitacaoRepo.save(any(Solicitacao.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Solicitacao resultado = solicitacaoService.submeter(dto);
+            assertThatThrownBy(() -> solicitacaoService.submeter(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Carga horária");
 
-            // cargaHoraria null no DTO é armazenada sem quebrar; validação deve ocorrer em aprovar()
-            assertThat(resultado.getCargaHorario()).isNull();
+            verify(solicitacaoRepo, never()).save(any());
         }
     }
 
